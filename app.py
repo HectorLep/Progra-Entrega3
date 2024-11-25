@@ -156,7 +156,6 @@ class SistemaGestionRestaurante(ctk.CTk):
         boton_boleta = ctk.CTkButton(frame_formulario, text="Generar Boleta")
         boton_boleta.place(x=600, y=600)
 
-
     def configurar_pedidos(self):
         # Crear un frame superior para mostrar los menús
         frame_superior = ctk.CTkFrame(self.tab_pedidos, height=300)
@@ -168,27 +167,49 @@ class SistemaGestionRestaurante(ctk.CTk):
         imagen_hotdog = ImageTk.PhotoImage(Image.open("./IMG/icono_hotdog_sin_texto_64x64.png"))
         imagen_hamburguesa = ImageTk.PhotoImage(Image.open("./IMG/icono_hamburguesa_negra_64x64.png"))
 
-        # Guardar referencias para que no se eliminen las imágenes
+        # Guardar referencias para evitar que las imágenes sean eliminadas
         self.tab_pedidos.imagenes = [imagen_papas, imagen_cola, imagen_hotdog, imagen_hamburguesa]
 
-        # Crear botones de menú con imágenes
-        menus = [
-            {"nombre": "Papas Fritas", "imagen": imagen_papas},
-            {"nombre": "Cola", "imagen": imagen_cola},
-            {"nombre": "Hotdog", "imagen": imagen_hotdog},
-            {"nombre": "Hamburguesa", "imagen": imagen_hamburguesa}
-        ]
+        # Crear botones para cada menú
+        boton_papas = ctk.CTkButton(
+            frame_superior,
+            text="Papas Fritas",
+            image=imagen_papas,
+            compound="top",
+            width=120,
+            height=120,
+        )
+        boton_papas.grid(row=0, column=0, padx=10, pady=10)
 
-        for i, menu in enumerate(menus):
-            boton = ctk.CTkButton(
-                frame_superior,
-                text=menu["nombre"],
-                image=menu["imagen"],
-                compound="top",
-                width=120,
-                height=120,
-            )
-            boton.grid(row=0, column=i, padx=10, pady=10)
+        boton_cola = ctk.CTkButton(
+            frame_superior,
+            text="Cola",
+            image=imagen_cola,
+            compound="top",
+            width=120,
+            height=120,
+        )
+        boton_cola.grid(row=0, column=1, padx=10, pady=10)
+
+        boton_hotdog = ctk.CTkButton(
+            frame_superior,
+            text="Hotdog",
+            image=imagen_hotdog,
+            compound="top",
+            width=120,
+            height=120,
+        )
+        boton_hotdog.grid(row=0, column=2, padx=10, pady=10)
+
+        boton_hamburguesa = ctk.CTkButton(
+            frame_superior,
+            text="Hamburguesa",
+            image=imagen_hamburguesa,
+            compound="top",
+            width=120,
+            height=120,
+        )
+        boton_hamburguesa.grid(row=0, column=3, padx=10, pady=10)
 
         # Crear un frame para el Treeview
         frame_treeview = ctk.CTkFrame(self.tab_pedidos)
@@ -210,7 +231,6 @@ class SistemaGestionRestaurante(ctk.CTk):
 
         boton_generar_boleta = ctk.CTkButton(frame_inferior, text="Generar Boleta")
         boton_generar_boleta.pack(side="right", padx=10)
-
 
     def configurar_graficos(self):
         # Configuración de gráficos
