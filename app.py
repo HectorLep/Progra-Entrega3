@@ -181,10 +181,6 @@ class SistemaGestionRestaurante(ctk.CTk):
         frame_superior = ctk.CTkFrame(self.tab_pedidos, height=200)
         frame_superior.pack(side="top", fill="x", expand=False, padx=10, pady=10)
 
-        # Etiqueta para el panel de pedidos
-        label_panel = ctk.CTkLabel(frame_superior, text="Panel de Pedidos", font=("Arial", 16, "bold"))
-        label_panel.pack(side="top", pady=5)
-
         # Combobox para seleccionar cliente
         label_cliente = ctk.CTkLabel(frame_superior, text="Seleccionar Cliente:")
         label_cliente.pack(side="left", padx=5)
