@@ -8,79 +8,163 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.title("Sistema de Gestión de Restaurante")
         self.geometry("1600x900")
 
-        
         # Crear las pestañas principales
-        self.tabview = ctk.CTkTabview(self, width=1600, height=800)
-        self.tabview.pack(padx=20, pady=20)
+        self.tabview = ctk.CTkTabview(self, width=1360, height=720) 
+        self.tabview.place(x=20, y=20)
         self.crear_pestanas()
 
     def crear_pestanas(self):
         # Crear las pestañas
-        self.tab_ingredientes = self.tabview.add("Gestión de Ingredientes")
-        self.tab_menus = self.tabview.add("Gestión de Menús")
-        self.tab_clientes = self.tabview.add("Gestión de Clientes")
-        self.tab_pedidos = self.tabview.add("Gestión de Pedidos")
-        self.tab_graficos = self.tabview.add("Estadísticas")
+        self.tab_ingredientes = self.tabview.add("Ingredientes")
+        self.tab_menus = self.tabview.add("Menús")
+        self.tab_clientes = self.tabview.add("Clientes")
+        self.tab_compras = self.tabview.add("Panel de Compra")
+        self.tab_pedidos = self.tabview.add("Pedidos")
+        self.tab_graficos = self.tabview.add("Graficos")
 
         # Configurar cada pestaña
         self.configurar_ingredientes()
         self.configurar_menus()
         self.configurar_clientes()
+        self.configurar_compras()
         self.configurar_pedidos()
         self.configurar_graficos()
 
     def configurar_ingredientes(self):
-        # Configurar interfaz para gestión de ingredientes
-        self._crear_formulario(self.tab_ingredientes, "Ingredientes", ["Nombre", "Tipo", "Cantidad", "Unidad de Medida"])
-        self._crear_treeview(self.tab_ingredientes, ["Nombre", "Tipo", "Cantidad", "Unidad de Medida"])
+        # Crear formulario manualmente
+        frame_formulario = ctk.CTkFrame(self.tab_ingredientes, width=1400, height=700)
+        frame_formulario.place(x=10, y=10)
+
+        # Etiquetas y entradas
+        label_nombre = ctk.CTkLabel(frame_formulario, text="Nombre:")
+        label_nombre.place(x=20, y=20)
+        entry_nombre = ctk.CTkEntry(frame_formulario)
+        entry_nombre.place(x=100, y=20)
+
+        label_tipo = ctk.CTkLabel(frame_formulario, text="Tipo:")
+        label_tipo.place(x=250, y=20)
+        entry_tipo = ctk.CTkEntry(frame_formulario)
+        entry_tipo.place(x=330, y=20)
+
+        boton_agregar = ctk.CTkButton(frame_formulario, text="Crear Ingrediente")
+        boton_agregar.place(x=20, y=80)
+
+        # Crear treeview manualmente
+        frame_treeview = ctk.CTkFrame(self.tab_ingredientes, width=1350, height=500)
+        frame_treeview.place(x=10, y=150)
+
+        tree = ttk.Treeview(frame_treeview, columns=["Nombre", "Tipo"], show="headings", height=30)
+        tree.heading("Nombre", text="Nombre")
+        tree.column("Nombre", width=650, anchor="center")
+        tree.heading("Tipo", text="Tipo")
+        tree.column("Tipo", width=650, anchor="center")
+        tree.place(x=10, y=100)
+
+
+
+    # Repite este esquema para las demás configuraciones
 
     def configurar_menus(self):
-        # Configurar interfaz para gestión de menús
-        self._crear_formulario(self.tab_menus, "Menús", ["Nombre", "Descripción"])
-        self._crear_treeview(self.tab_menus, ["Nombre", "Descripción", "Ingredientes"])
+        # Ejemplo para Menús
+        frame_formulario = ctk.CTkFrame(self.tab_menus, width=1400, height=700)
+        frame_formulario.place(x=10, y=10)
+
+        label_nombre = ctk.CTkLabel(frame_formulario, text="Nombre del Menú:")
+        label_nombre.place(x=20, y=20)
+        entry_nombre = ctk.CTkEntry(frame_formulario)
+        entry_nombre.place(x=150, y=20)
+
+        label_descripcion = ctk.CTkLabel(frame_formulario, text="Descripción:")
+        label_descripcion.place(x=320, y=20)
+        entry_descripcion = ctk.CTkEntry(frame_formulario)
+        entry_descripcion.place(x=450, y=20)
+
+        boton_agregar = ctk.CTkButton(frame_formulario, text="Crear Menú")
+        boton_agregar.place(x=20, y=80)
+
+        frame_treeview = ctk.CTkFrame((self.tab_menus), width=1350, height=500)
+        frame_treeview.place(x=10, y=150)
+
+        tree = ttk.Treeview(frame_treeview, columns=["Nombre", "Descripción"], show="headings", height=30)
+        tree.heading("Nombre", text="Nombre")
+        tree.column("Nombre", width=650, anchor="center")
+        tree.heading("Descripción", text="Descripción")
+        tree.column("Descripción", width=650, anchor="center")
+        tree.place(x=10, y=100)
 
     def configurar_clientes(self):
-        # Configurar interfaz para gestión de clientes
-        self._crear_formulario(self.tab_clientes, "Clientes", ["Nombre", "Correo Electrónico"])
-        self._crear_treeview(self.tab_clientes, ["Nombre", "Correo Electrónico"])
+        # Crear formulario manualmente
+        frame_formulario = ctk.CTkFrame(self.tab_clientes, width=1400, height=700)
+        frame_formulario.place(x=10, y=10)
+
+        # Etiquetas y entradas
+        label_nombre = ctk.CTkLabel(frame_formulario, text="Nombre:")
+        label_nombre.place(x=20, y=20)
+        entry_nombre = ctk.CTkEntry(frame_formulario)
+        entry_nombre.place(x=150, y=20)
+
+        label_correo = ctk.CTkLabel(frame_formulario, text="Email:")
+        label_correo.place(x=320, y=20)
+        entry_correo = ctk.CTkEntry(frame_formulario)
+        entry_correo.place(x=420, y=20)
+
+        boton_crear = ctk.CTkButton(frame_formulario, text="Agregar Cliente")
+        boton_crear.place(x=10, y=80)
+
+        boton_act = ctk.CTkButton(frame_formulario, text="Agregar Cliente")
+        boton_act.place(x=200, y=80)
+
+        boton_eliminar = ctk.CTkButton(frame_formulario, text="Agregar Cliente")
+        boton_eliminar.place(x=390, y=80)
+
+        # Crear treeview manualmente
+        frame_treeview = ctk.CTkFrame((self.tab_clientes), width=1350, height=500)
+        frame_treeview.place(x=10, y=150)
+
+        tree = ttk.Treeview(frame_treeview, columns=["Email", "Nombre"], show="headings", height=30)
+        tree.heading("Email", text="Email")
+        tree.column("Email", width=650, anchor="center")
+        tree.heading("Nombre", text="Nombre")
+        tree.column("Nombre", width=650, anchor="center")
+        tree.place(x=10, y=100)
+
+    def configurar_compras(self):
+        # Crear formulario manualmente
+        frame_formulario = ctk.CTkFrame(self.tab_compras, width=1400, height=700)
+        frame_formulario.place(x=10, y=10)
+
+        label_menu = ctk.CTkLabel(frame_formulario, text="Menú:")
+        label_menu.place(x=20, y=20)
+
+        combo_menu = ctk.CTkComboBox(frame_formulario, values=[])
+        combo_menu.place(x=80, y=20)
+
+        boton_crear = ctk.CTkButton(frame_formulario, text="Agregar a la compra")
+        boton_crear.place(x=280, y=20)
+
+        # Crear treeview manualmente
+        frame_treeview = ctk.CTkFrame((self.tab_compras), width=1350, height=500)
+        frame_treeview.place(x=10, y=70)
+
+        tree = ttk.Treeview(frame_treeview, columns=["Nombre", "Cantidad"], show="headings", height=30)
+        tree.heading("Nombre", text="Nombre")
+        tree.column("Nombre", width=650, anchor="center")
+        tree.heading("Cantidad", text="Cantidad")
+        tree.column("Cantidad", width=650, anchor="center")
+        tree.place(x=10, y=70)
+
+        boton_boleta = ctk.CTkButton(frame_formulario, text="Generar Boleta")
+        boton_boleta.place(x=600, y=600)
 
     def configurar_pedidos(self):
-        # Configurar interfaz para gestión de pedidos
-        self._crear_formulario(self.tab_pedidos, "Pedidos", ["Cliente", "Menú", "Total", "Fecha"])
-        self._crear_treeview(self.tab_pedidos, ["Cliente", "Menú", "Total", "Fecha"])
+
+
+        pass
 
     def configurar_graficos(self):
-        # Configurar interfaz para generación de gráficos
+        # Configuración de gráficos
         label = ctk.CTkLabel(self.tab_graficos, text="Selecciona un tipo de gráfico:")
-        label.pack(pady=10)
+        label.place(x=20, y=20)
 
         combo = ttk.Combobox(self.tab_graficos, values=["Ventas Diarias", "Ventas Semanales", "Ingredientes Más Utilizados"])
-        combo.pack(pady=10)
-
-    def _crear_formulario(self, tab, tipo, campos):
-        # Crear formulario básico
-        frame_formulario = ctk.CTkFrame(tab)
-        frame_formulario.pack(side="left", fill="both", expand=True, padx=10, pady=10)
-
-        for campo in campos:
-            label = ctk.CTkLabel(frame_formulario, text=f"{campo}:")
-            label.pack(pady=4)
-            entry = ctk.CTkEntry(frame_formulario)
-            entry.pack(pady=4)
-
-        boton = ctk.CTkButton(frame_formulario, text=f"Agregar {tipo}")
-        boton.pack(pady=10)
-
-    def _crear_treeview(self, tab, columnas):
-        # Crear treeview básico
-        frame_treeview = ctk.CTkFrame(tab)
-        frame_treeview.pack(side="right", fill="both", expand=True, padx=10, pady=10)
-
-        tree = ttk.Treeview(frame_treeview, columns=columnas, show="headings")
-        for col in columnas:
-            tree.heading(col, text=col)
-            tree.column(col, width=150, anchor="center")
-        tree.pack(expand=True, fill="both", padx=10, pady=10)
-
-        boton = ctk.CTkButton(frame_treeview, text="Eliminar Selección")
-        boton.pack(pady=10)
+        combo.place(x=20, y=60)
