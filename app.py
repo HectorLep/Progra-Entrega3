@@ -156,10 +156,61 @@ class SistemaGestionRestaurante(ctk.CTk):
         boton_boleta = ctk.CTkButton(frame_formulario, text="Generar Boleta")
         boton_boleta.place(x=600, y=600)
 
+
     def configurar_pedidos(self):
+        # Crear un frame superior para mostrar los menús
+        frame_superior = ctk.CTkFrame(self.tab_pedidos, height=300)
+        frame_superior.pack(side="top", fill="x", expand=False, padx=10, pady=10)
 
+        # Cargar imágenes de los menús
+        imagen_papas = ImageTk.PhotoImage(Image.open("./IMG/icono_papas_fritas_64x64.png"))
+        imagen_cola = ImageTk.PhotoImage(Image.open("./IMG/icono_cola_64x64.png"))
+        imagen_hotdog = ImageTk.PhotoImage(Image.open("./IMG/icono_hotdog_sin_texto_64x64.png"))
+        imagen_hamburguesa = ImageTk.PhotoImage(Image.open("./IMG/icono_hamburguesa_negra_64x64.png"))
 
-        pass
+        # Guardar referencias para que no se eliminen las imágenes
+        self.tab_pedidos.imagenes = [imagen_papas, imagen_cola, imagen_hotdog, imagen_hamburguesa]
+
+        # Crear botones de menú con imágenes
+        menus = [
+            {"nombre": "Papas Fritas", "imagen": imagen_papas},
+            {"nombre": "Cola", "imagen": imagen_cola},
+            {"nombre": "Hotdog", "imagen": imagen_hotdog},
+            {"nombre": "Hamburguesa", "imagen": imagen_hamburguesa}
+        ]
+
+        for i, menu in enumerate(menus):
+            boton = ctk.CTkButton(
+                frame_superior,
+                text=menu["nombre"],
+                image=menu["imagen"],
+                compound="top",
+                width=120,
+                height=120,
+            )
+            boton.grid(row=0, column=i, padx=10, pady=10)
+
+        # Crear un frame para el Treeview
+        frame_treeview = ctk.CTkFrame(self.tab_pedidos)
+        frame_treeview.pack(side="top", fill="both", expand=True, padx=10, pady=10)
+
+        # Crear el Treeview para los pedidos
+        tree = ttk.Treeview(frame_treeview, columns=("Nombre del menú", "Cantidad", "Precio Unitario"), show="headings")
+        tree.heading("Nombre del menú", text="Nombre del menú")
+        tree.heading("Cantidad", text="Cantidad")
+        tree.heading("Precio Unitario", text="Precio Unitario")
+        tree.pack(expand=True, fill="both")
+
+        # Crear un frame inferior para mostrar el total y un botón
+        frame_inferior = ctk.CTkFrame(self.tab_pedidos)
+        frame_inferior.pack(side="bottom", fill="x", padx=10, pady=10)
+
+        label_total = ctk.CTkLabel(frame_inferior, text="Total: 0 CLP", font=("Arial", 14))
+        label_total.pack(side="left", padx=10)
+
+        boton_generar_boleta = ctk.CTkButton(frame_inferior, text="Generar Boleta")
+        boton_generar_boleta.pack(side="right", padx=10)
+
 
     def configurar_graficos(self):
         # Configuración de gráficos
