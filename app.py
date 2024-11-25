@@ -6,7 +6,7 @@ class SistemaGestionRestaurante(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Sistema de Gestión de Restaurante")
-        self.geometry("1600x900")
+        self.geometry("1400x800")
 
         # Crear las pestañas principales
         self.tabview = ctk.CTkTabview(self, width=1360, height=720) 
@@ -45,24 +45,38 @@ class SistemaGestionRestaurante(ctk.CTk):
         label_tipo.place(x=250, y=20)
         entry_tipo = ctk.CTkEntry(frame_formulario)
         entry_tipo.place(x=330, y=20)
+        # Etiqueta y entrada para Cantidad
+        label_cantidad = ctk.CTkLabel(frame_formulario, text="Cantidad:")
+        label_cantidad.place(x=20, y=50)
+        entry_cantidad = ctk.CTkEntry(frame_formulario)
+        entry_cantidad.place(x=100, y=50)
 
+        # Etiqueta y entrada para Unidad de Medida
+        label_unidad = ctk.CTkLabel(frame_formulario, text="Unidad de Medida:")
+        label_unidad.place(x=250, y=50)
+        entry_unidad = ctk.CTkEntry(frame_formulario)
+        entry_unidad.place(x=400, y=50)
+
+
+        # Conectar botón con función
         boton_agregar = ctk.CTkButton(frame_formulario, text="Crear Ingrediente")
-        boton_agregar.place(x=20, y=80)
+        boton_agregar.place(x=20, y=100)
 
         # Crear treeview manualmente
         frame_treeview = ctk.CTkFrame(self.tab_ingredientes, width=1350, height=500)
         frame_treeview.place(x=10, y=150)
 
-        tree = ttk.Treeview(frame_treeview, columns=["Nombre", "Tipo"], show="headings", height=30)
+        tree = ttk.Treeview(frame_treeview, columns=["Nombre", "Tipo", "Cantidad", "Unidad"], show="headings", height=30)
         tree.heading("Nombre", text="Nombre")
-        tree.column("Nombre", width=650, anchor="center")
+        tree.column("Nombre", width=325, anchor="center")
         tree.heading("Tipo", text="Tipo")
-        tree.column("Tipo", width=650, anchor="center")
+        tree.column("Tipo", width=325, anchor="center")
+        tree.heading("Cantidad", text="Cantidad")
+        tree.column("Cantidad", width=325, anchor="center")
+        tree.heading("Unidad", text="Unidad")
+        tree.column("Unidad", width=325, anchor="center")
         tree.place(x=10, y=100)
 
-
-
-    # Repite este esquema para las demás configuraciones
 
     def configurar_menus(self):
         # Ejemplo para Menús
@@ -111,10 +125,10 @@ class SistemaGestionRestaurante(ctk.CTk):
         boton_crear = ctk.CTkButton(frame_formulario, text="Agregar Cliente")
         boton_crear.place(x=10, y=80)
 
-        boton_act = ctk.CTkButton(frame_formulario, text="Agregar Cliente")
+        boton_act = ctk.CTkButton(frame_formulario, text="Actualizar Cliente")
         boton_act.place(x=200, y=80)
 
-        boton_eliminar = ctk.CTkButton(frame_formulario, text="Agregar Cliente")
+        boton_eliminar = ctk.CTkButton(frame_formulario, text="Eliminar Cliente")
         boton_eliminar.place(x=390, y=80)
 
         # Crear treeview manualmente
@@ -137,10 +151,16 @@ class SistemaGestionRestaurante(ctk.CTk):
         label_menu.place(x=20, y=20)
 
         combo_menu = ctk.CTkComboBox(frame_formulario, values=[])
-        combo_menu.place(x=80, y=20)
+        combo_menu.place(x=70, y=20)
+
+        label_clientes = ctk.CTkLabel(frame_formulario, text="Cliente:")
+        label_clientes.place(x=250, y=20)
+
+        combo_clientes = ctk.CTkComboBox(frame_formulario, values=[])
+        combo_clientes.place(x=320, y=20)
 
         boton_crear = ctk.CTkButton(frame_formulario, text="Agregar a la compra")
-        boton_crear.place(x=280, y=20)
+        boton_crear.place(x=500, y=20)
 
         # Crear treeview manualmente
         frame_treeview = ctk.CTkFrame((self.tab_compras), width=1350, height=500)
@@ -237,5 +257,5 @@ class SistemaGestionRestaurante(ctk.CTk):
         label = ctk.CTkLabel(self.tab_graficos, text="Selecciona un tipo de gráfico:")
         label.place(x=20, y=20)
 
-        combo = ttk.Combobox(self.tab_graficos, values=["Ventas Diarias", "Ventas Semanales", "Ingredientes Más Utilizados"])
+        combo = ttk.Combobox(self.tab_graficos, values=["Ventas Diarias", "Ventas Semanales", "Ventas Mensuales", "Ventas Anuales"])
         combo.place(x=20, y=60)
