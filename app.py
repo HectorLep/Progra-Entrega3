@@ -177,80 +177,49 @@ class SistemaGestionRestaurante(ctk.CTk):
         boton_boleta.place(x=600, y=600)
 
     def configurar_pedidos(self):
-        # Crear un frame superior para mostrar los menús
-        frame_superior = ctk.CTkFrame(self.tab_pedidos, height=300)
+        # Crear un frame para la lista de pedidos y opciones de organización
+        frame_superior = ctk.CTkFrame(self.tab_pedidos, height=200)
         frame_superior.pack(side="top", fill="x", expand=False, padx=10, pady=10)
 
-        # Cargar imágenes de los menús
-        imagen_papas = ImageTk.PhotoImage(Image.open("./IMG/icono_papas_fritas_64x64.png"))
-        imagen_cola = ImageTk.PhotoImage(Image.open("./IMG/icono_cola_64x64.png"))
-        imagen_hotdog = ImageTk.PhotoImage(Image.open("./IMG/icono_hotdog_sin_texto_64x64.png"))
-        imagen_hamburguesa = ImageTk.PhotoImage(Image.open("./IMG/icono_hamburguesa_negra_64x64.png"))
+        # Etiqueta para el panel de pedidos
+        label_panel = ctk.CTkLabel(frame_superior, text="Panel de Pedidos", font=("Arial", 16, "bold"))
+        label_panel.pack(side="top", pady=5)
 
-        # Guardar referencias para evitar que las imágenes sean eliminadas
-        self.tab_pedidos.imagenes = [imagen_papas, imagen_cola, imagen_hotdog, imagen_hamburguesa]
+        # Combobox para seleccionar cliente
+        label_cliente = ctk.CTkLabel(frame_superior, text="Seleccionar Cliente:")
+        label_cliente.pack(side="left", padx=5)
+        combobox_cliente = ttk.Combobox(frame_superior)
+        combobox_cliente.pack(side="left", padx=5)
 
-        # Crear botones para cada menú
-        boton_papas = ctk.CTkButton(
-            frame_superior,
-            text="Papas Fritas",
-            image=imagen_papas,
-            compound="top",
-            width=120,
-            height=120,
-        )
-        boton_papas.grid(row=0, column=0, padx=10, pady=10)
+        # Crear botones para organizar la lista de pedidos
+        boton_organizar_fecha = ctk.CTkButton(frame_superior, text="Ordenar por Fecha")
+        boton_organizar_fecha.pack(side="left", padx=5)
 
-        boton_cola = ctk.CTkButton(
-            frame_superior,
-            text="Cola",
-            image=imagen_cola,
-            compound="top",
-            width=120,
-            height=120,
-        )
-        boton_cola.grid(row=0, column=1, padx=10, pady=10)
+        boton_organizar_cliente = ctk.CTkButton(frame_superior, text="Ordenar por Cliente")
+        boton_organizar_cliente.pack(side="left", padx=5)
 
-        boton_hotdog = ctk.CTkButton(
-            frame_superior,
-            text="Hotdog",
-            image=imagen_hotdog,
-            compound="top",
-            width=120,
-            height=120,
-        )
-        boton_hotdog.grid(row=0, column=2, padx=10, pady=10)
-
-        boton_hamburguesa = ctk.CTkButton(
-            frame_superior,
-            text="Hamburguesa",
-            image=imagen_hamburguesa,
-            compound="top",
-            width=120,
-            height=120,
-        )
-        boton_hamburguesa.grid(row=0, column=3, padx=10, pady=10)
-
-        # Crear un frame para el Treeview
+        # Crear un frame para mostrar la lista de pedidos
         frame_treeview = ctk.CTkFrame(self.tab_pedidos)
         frame_treeview.pack(side="top", fill="both", expand=True, padx=10, pady=10)
 
-        # Crear el Treeview para los pedidos
-        tree = ttk.Treeview(frame_treeview, columns=("Nombre del menú", "Cantidad", "Precio Unitario"), show="headings")
-        tree.heading("Nombre del menú", text="Nombre del menú")
-        tree.heading("Cantidad", text="Cantidad")
-        tree.heading("Precio Unitario", text="Precio Unitario")
+        # Crear el Treeview para mostrar los pedidos
+        tree = ttk.Treeview(frame_treeview, columns=("Cliente", "Fecha", "Total"), show="headings")
+        tree.heading("Cliente", text="Cliente")
+        tree.heading("Fecha", text="Fecha")
+        tree.heading("Total", text="Total")
         tree.pack(expand=True, fill="both")
 
-        # Crear un frame inferior para mostrar el total y un botón
+        # Crear un frame inferior para el total y otras acciones
         frame_inferior = ctk.CTkFrame(self.tab_pedidos)
         frame_inferior.pack(side="bottom", fill="x", padx=10, pady=10)
 
+        # Etiqueta para mostrar el total del pedido
         label_total = ctk.CTkLabel(frame_inferior, text="Total: 0 CLP", font=("Arial", 14))
         label_total.pack(side="left", padx=10)
 
-        boton_generar_boleta = ctk.CTkButton(frame_inferior, text="Generar Boleta")
-        boton_generar_boleta.pack(side="right", padx=10)
+        # Botón para confirmar la revisión
+        boton_confirmar = ctk.CTkButton(frame_inferior, text="Confirmar Pedido")
+        boton_confirmar.pack(side="right", padx=10)
 
     def configurar_graficos(self):
         # Configuración de gráficos
