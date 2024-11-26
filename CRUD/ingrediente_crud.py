@@ -115,3 +115,35 @@ class IngredienteCRUD:
                 params.append(unidad_medida)
             
             if updates:
+                query = f'UPDATE ingredientes SET {", ".join(updates)} WHERE id = ?'
+            params.append(id)
+            
+            cursor.execute(query, tuple(params))
+            conn.commit()
+
+    def eliminar_ingrediente(self, id: int):
+        """
+        Delete an ingredient from the database
+        
+        Args:
+            id (int): Ingredient's ID
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM ingredientes WHERE id = ?', (id,))
+            conn.commit()
+
+    def obtener_ingrediente_por_nombre(self, nombre: str) -> Optional[Tuple[int, str, str, float, str]]:
+        """
+        Retrieve an ingredient by its name
+        
+        Args:
+            nombre (str): Ingredient name
+        
+        Returns:
+            Optional[Tuple[int, str, str, float, str]]: Ingredient details or None if not found
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, nombre, tipo, cantidad, unidad_medida FROM ingredientes WHERE nombre = ?', (nombre,))
+            return cursor.fetchone()
