@@ -1,12 +1,19 @@
 import customtkinter as ctk
-from tkinter import ttk
+from CRUD.cliente_crud import ClienteCRUD
+from tkinter import ttk, messagebox
+import sqlite3
 
 class SistemaGestionRestaurante(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Sistema de Gestión de Restaurante")
         self.geometry("1400x800")
-
+        self.resizable(False, False)
+        # Initialize ClienteCRUD
+        self.cliente_crud = ClienteCRUD()
+        
+        # Additional setup for clients tab
+        self.setup_cliente_crud_events()
         # Crear las pestañas principales
         self.tabview = ctk.CTkTabview(self, width=1360, height=720) 
         self.tabview.place(x=20, y=20)
@@ -106,40 +113,166 @@ class SistemaGestionRestaurante(ctk.CTk):
         tree.place(x=10, y=100)
 
     def configurar_clientes(self):
-        # Crear formulario manualmente
-        frame_formulario = ctk.CTkFrame(self.tab_clientes, width=1400, height=700)
-        frame_formulario.place(x=10, y=10)
+        # Create form frame
+        self.frame_formulario = ctk.CTkFrame(self.tab_clientes, width=1400, height=700)
+        self.frame_formulario.place(x=10, y=10)
 
-        # Etiquetas y entradas
-        label_nombre = ctk.CTkLabel(frame_formulario, text="Nombre:")
-        label_nombre.place(x=20, y=20)
-        entry_nombre = ctk.CTkEntry(frame_formulario)
-        entry_nombre.place(x=150, y=20)
+        # Labels and entries
+        self.label_nombre = ctk.CTkLabel(self.frame_formulario, text="Nombre:")
+        self.label_nombre.place(x=20, y=20)
+        self.entry_nombre = ctk.CTkEntry(self.frame_formulario, width=200)
+        self.entry_nombre.place(x=150, y=20)
 
-        label_correo = ctk.CTkLabel(frame_formulario, text="Email:")
-        label_correo.place(x=320, y=20)
-        entry_correo = ctk.CTkEntry(frame_formulario)
-        entry_correo.place(x=420, y=20)
+        self.label_correo = ctk.CTkLabel(self.frame_formulario, text="Email:")
+        self.label_correo.place(x=320, y=20)
+        self.entry_correo = ctk.CTkEntry(self.frame_formulario, width=200)
+        self.entry_correo.place(x=420, y=20)
 
-        boton_crear = ctk.CTkButton(frame_formulario, text="Agregar Cliente")
-        boton_crear.place(x=10, y=80)
+        # Buttons with event handling
+        self.boton_crear = ctk.CTkButton(self.frame_formulario, text="Agregar Cliente", 
+                                         command=self.agregar_cliente)
+        self.boton_crear.place(x=10, y=80)
 
-        boton_act = ctk.CTkButton(frame_formulario, text="Actualizar Cliente")
-        boton_act.place(x=200, y=80)
+        self.boton_act = ctk.CTkButton(self.frame_formulario, text="Actualizar Cliente", 
+                                       command=self.actualizar_cliente)
+        self.boton_act.place(x=200, y=80)
 
-        boton_eliminar = ctk.CTkButton(frame_formulario, text="Eliminar Cliente")
-        boton_eliminar.place(x=390, y=80)
+        self.boton_eliminar = ctk.CTkButton(self.frame_formulario, text="Eliminar Cliente", 
+                                            command=self.eliminar_cliente)
+        self.boton_eliminar.place(x=390, y=80)
 
-        # Crear treeview manualmente
-        frame_treeview = ctk.CTkFrame((self.tab_clientes), width=1350, height=500)
-        frame_treeview.place(x=10, y=150)
+        # Create treeview
+        self.frame_treeview = ctk.CTkFrame(self.tab_clientes, width=1350, height=500)
+        self.frame_treeview.place(x=10, y=150)
 
-        tree = ttk.Treeview(frame_treeview, columns=["Email", "Nombre"], show="headings", height=30)
-        tree.heading("Email", text="Email")
-        tree.column("Email", width=650, anchor="center")
-        tree.heading("Nombre", text="Nombre")
-        tree.column("Nombre", width=650, anchor="center")
-        tree.place(x=10, y=100)
+        self.tree = ttk.Treeview(self.frame_treeview, columns=["ID", "Nombre", "Email"], show="headings", height=30)
+        self.tree.heading("ID", text="ID")
+        self.tree.column("ID", width=100, anchor="center")
+        self.tree.heading("Nombre", text="Nombre")
+        self.tree.column("Nombre", width=400, anchor="center")
+        self.tree.heading("Email", text="Email")
+        self.tree.column("Email", width=400, anchor="center")
+        self.tree.place(x=10, y=100)
+        
+        # Add event binding for row selection
+        self.tree.bind('<ButtonRelease-1>', self.seleccionar_cliente)
+
+        # Initial population of treeview
+        self.actualizar_lista_clientes()
+
+    def setup_cliente_crud_events(self):
+        # Additional setup methods can be added here if needed
+        pass
+
+    def agregar_cliente(self):
+        nombre = self.entry_nombre.get()
+        correo = self.entry_correo.get()
+        
+        if not nombre or not correo:
+            messagebox.showerror("Error", "Todos los campos son requeridos")
+            return
+        
+        try:
+            # Create client
+            cliente_id = self.cliente_crud.crear_cliente(nombre, correo)
+            messagebox.showinfo("Éxito", f"Cliente creado con ID: {cliente_id}")
+            
+            # Clear entries
+            self.entry_nombre.delete(0, 'end')
+            self.entry_correo.delete(0, 'end')
+            
+            # Refresh client list
+            self.actualizar_lista_clientes()
+        
+        except sqlite3.IntegrityError:
+            messagebox.showerror("Error", "El correo electrónico ya existe")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def actualizar_cliente(self):
+        # Get selected item
+        selected_item = self.tree.selection()
+        if not selected_item:
+            messagebox.showerror("Error", "Seleccione un cliente para actualizar")
+            return
+        
+        # Get current values
+        cliente_id = self.tree.item(selected_item[0])['values'][0]
+        nombre = self.entry_nombre.get()
+        correo = self.entry_correo.get()
+        
+        if not nombre and not correo:
+            messagebox.showerror("Error", "Ingrese al menos un campo para actualizar")
+            return
+        
+        try:
+            # Update client
+            self.cliente_crud.actualizar_cliente(cliente_id, nombre, correo)
+            messagebox.showinfo("Éxito", "Cliente actualizado")
+            
+            # Clear entries
+            self.entry_nombre.delete(0, 'end')
+            self.entry_correo.delete(0, 'end')
+            
+            # Refresh client list
+            self.actualizar_lista_clientes()
+        
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def eliminar_cliente(self):
+        # Get selected item
+        selected_item = self.tree.selection()
+        if not selected_item:
+            messagebox.showerror("Error", "Seleccione un cliente para eliminar")
+            return
+        
+        # Get client ID
+        cliente_id = self.tree.item(selected_item[0])['values'][0]
+        
+        # Confirm deletion
+        respuesta = messagebox.askyesno("Confirmar", "¿Está seguro de eliminar este cliente?")
+        if respuesta:
+            try:
+                # Delete client
+                self.cliente_crud.eliminar_cliente(cliente_id)
+                messagebox.showinfo("Éxito", "Cliente eliminado")
+                
+                # Clear entries
+                self.entry_nombre.delete(0, 'end')
+                self.entry_correo.delete(0, 'end')
+                
+                # Refresh client list
+                self.actualizar_lista_clientes()
+            
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
+
+    def actualizar_lista_clientes(self):
+        # Clear existing items
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        
+        # Fetch and populate clients
+        clientes = self.cliente_crud.listar_clientes()
+        for cliente in clientes:
+            self.tree.insert('', 'end', values=cliente)
+
+    def seleccionar_cliente(self, event):
+        # Get selected item
+        selected_item = self.tree.selection()
+        if selected_item:
+            # Populate entries with selected client's details
+            valores = self.tree.item(selected_item[0])['values']
+            
+            # Clear existing entries
+            self.entry_nombre.delete(0, 'end')
+            self.entry_correo.delete(0, 'end')
+            
+            # Insert selected client's details
+            self.entry_nombre.insert(0, valores[1])  # Nombre
+            self.entry_correo.insert(0, valores[2])  # Correo
+
 
     def configurar_compras(self):
         # Crear formulario manualmente
