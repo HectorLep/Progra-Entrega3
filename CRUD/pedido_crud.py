@@ -178,3 +178,40 @@ class PedidoCRUD:
                 WHERE date(fecha) = ?
             ''', (fecha,))
             return cursor.fetchone()[0] or 0.0
+
+
+    def listar_pedidos_con_cliente(self) -> List[Tuple[int, str, str, float]]:
+        """
+        List all orders with client names
+        
+        Returns:
+            List[Tuple[int, str, str, float]]: List of order details (id, client name, date, total)
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT p.id, c.nombre, p.fecha, p.total 
+                FROM pedidos p
+                JOIN clientes c ON p.cliente_id = c.id
+            ''')
+            return cursor.fetchall()
+
+    def listar_pedidos_por_cliente(self, cliente_nombre: str) -> List[Tuple[int, str, str, float]]:
+        """
+        Retrieve orders for a specific client by name
+        
+        Args:
+            cliente_nombre (str): Client's name
+        
+        Returns:
+            List[Tuple[int, str, str, float]]: List of order details (id, client name, date, total)
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT p.id, c.nombre, p.fecha, p.total 
+                FROM pedidos p
+                JOIN clientes c ON p.cliente_id = c.id
+                WHERE c.nombre = ?
+            ''', (cliente_nombre,))
+            return cursor.fetchall()

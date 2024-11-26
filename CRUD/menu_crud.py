@@ -103,7 +103,7 @@ class MenuCRUD:
 
     def obtener_ingredientes_menu(self, menu_id: int) -> List[Tuple[int, str, float]]:
         """
-        Get ingredients for a specific menu
+        Get ingredients for a specific menu without price information.
         
         Args:
             menu_id (int): Menu's ID
@@ -114,12 +114,13 @@ class MenuCRUD:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                SELECT mi.ingrediente_id, i.nombre, mi.cantidad 
+                SELECT mi.ingrediente_id, i.nombre, mi.cantidad
                 FROM menu_ingredientes mi
                 JOIN ingredientes i ON mi.ingrediente_id = i.id
                 WHERE mi.menu_id = ?
             ''', (menu_id,))
             return cursor.fetchall()
+
 
     def actualizar_menu(self, id: int, nombre: str = None, descripcion: str = None, 
                          ingredientes: List[Tuple[int, float]] = None):
@@ -182,17 +183,21 @@ class MenuCRUD:
             cursor.execute('DELETE FROM menus WHERE id = ?', (id,))
             conn.commit()
 
-    def obtener_menu_por_nombre(self, nombre: str) -> Optional[Tuple[int, str, str]]:
+    def obtener_menu_por_nombre(self, nombre: str) -> Optional[Tuple[int, str, str, float]]:
         """
-        Retrieve a menu by its name
+        Get menu details by name, including price.
         
         Args:
-            nombre (str): Menu name
+            nombre (str): Menu's name
         
         Returns:
-            Optional[Tuple[int, str, str]]: Menu details or None if not found
+            Optional[Tuple[int, str, str, float]]: Menu details (id, name, description, price).
         """
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT id, nombre, descripcion FROM menus WHERE nombre = ?', (nombre,))
+            cursor.execute('''
+                SELECT id, nombre, descripcion, precio 
+                FROM menus 
+                WHERE nombre = ?
+            ''', (nombre,))
             return cursor.fetchone()

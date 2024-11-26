@@ -64,6 +64,20 @@ class ClienteCRUD:
             cursor = conn.cursor()
             cursor.execute('SELECT id, nombre, correo_electronico FROM clientes WHERE id = ?', (id,))
             return cursor.fetchone()
+    def obtener_cliente_por_nombre(self, nombre: str) -> Optional[Tuple[int, str, str]]:
+        """
+        Retrieve a client by their name
+        
+        Args:
+            nombre (str): Client's name
+        
+        Returns:
+            Optional[Tuple[int, str, str]]: Client details or None if not found
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, nombre, correo_electronico FROM clientes WHERE nombre = ?', (nombre,))
+            return cursor.fetchone()
 
     def listar_clientes(self) -> List[Tuple[int, str, str]]:
         """

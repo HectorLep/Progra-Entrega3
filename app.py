@@ -615,38 +615,16 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.combo_clientes = ctk.CTkComboBox(frame_formulario, values=[])
         self.combo_clientes.place(x=320, y=20)
 
-        boton_crear = ctk.CTkButton(frame_formulario, text="Agregar a la compra", command=self.agregar_a_compra)
+        boton_crear = ctk.CTkButton(frame_formulario, text="Agregar a la compra", 
+                                command=lambda: [self.debug_pedido(), self.agregar_a_compra()])
         boton_crear.place(x=500, y=20)
 
-    def agregar_a_compra(self):
-        cliente_seleccionado = self.combo_clientes.get()
-        menu_seleccionado = self.combo_menu.get()
-        
-        if not cliente_seleccionado or not menu_seleccionado:
-            messagebox.showerror("Error", "Seleccione cliente y menú")
-            return
-        
-        try:
-            # Aquí necesitarías lógica para obtener IDs de cliente y menú
-            cliente_id = self.cliente_crud.obtener_cliente_por_nombre(cliente_seleccionado)[0]
-            menu_id = self.obtener_menu_id(menu_seleccionado)
-            
-            # Calcular total (por ahora hardcodeado, después podrías obtenerlo del menú)
-            total = 10000  # Ejemplo de precio
-            
-            pedido_id = self.pedido_crud.crear_pedido(cliente_id, menu_id, total)
-            messagebox.showinfo("Éxito", f"Pedido {pedido_id} creado")
-        
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-
-    def obtener_menu_id(self, nombre_menu):
-        # Implementar consulta a base de datos para obtener ID del menú
-        # Este método es un placeholder
-        pass
-
-
     def configurar_compras(self):
+        # Primero inicializamos los atributos de la clase
+        self.combo_clientes = None
+        self.combo_menu = None
+        self.tree_compras = None
+
         # Crear formulario manualmente
         frame_formulario = ctk.CTkFrame(self.tab_compras, width=1400, height=700)
         frame_formulario.place(x=10, y=10)
@@ -654,33 +632,142 @@ class SistemaGestionRestaurante(ctk.CTk):
         label_menu = ctk.CTkLabel(frame_formulario, text="Menú:")
         label_menu.place(x=20, y=20)
 
-        combo_menu = ctk.CTkComboBox(frame_formulario, values=[])
-        combo_menu.place(x=70, y=20)
+        # Inicializar combo_menu
+        self.combo_menu = ctk.CTkComboBox(frame_formulario, values=[])
+        self.combo_menu.place(x=70, y=20)
 
         label_clientes = ctk.CTkLabel(frame_formulario, text="Cliente:")
         label_clientes.place(x=250, y=20)
 
-        combo_clientes = ctk.CTkComboBox(frame_formulario, values=[])
-        combo_clientes.place(x=320, y=20)
+        # Inicializar combo_clientes
+        self.combo_clientes = ctk.CTkComboBox(frame_formulario, values=[])
+        self.combo_clientes.place(x=320, y=20)
 
-        boton_crear = ctk.CTkButton(frame_formulario, text="Agregar a la compra")
-        boton_crear.place(x=500, y=20)
+        # Cargar los datos en los combos
+        self.cargar_combos_compras()
 
-        # Crear treeview manualmente
-        frame_treeview = ctk.CTkFrame((self.tab_compras), width=1350, height=500)
-        frame_treeview.place(x=10, y=70)
+        # 1. Agregar un Label y Entry para la cantidad en el formulario
+        label_cantidad = ctk.CTkLabel(frame_formulario, text="Cantidad:")
+        label_cantidad.place(x=500, y=20)
 
-        tree = ttk.Treeview(frame_treeview, columns=["Nombre", "Cantidad"], show="headings", height=30)
-        tree.heading("Nombre", text="Nombre")
-        tree.column("Nombre", width=650, anchor="center")
-        tree.heading("Cantidad", text="Cantidad")
-        tree.column("Cantidad", width=650, anchor="center")
-        tree.place(x=10, y=70)
+        self.entry_cantidad = ctk.CTkEntry(frame_formulario)
+        self.entry_cantidad.place(x=610, y=20)
 
-        boton_boleta = ctk.CTkButton(frame_formulario, text="Generar Boleta")
-        boton_boleta.place(x=600, y=600)
+        boton_crear = ctk.CTkButton(frame_formulario, text="Agregar a la compra", command=self.agregar_a_compra)
+        boton_crear.place(x=800, y=20)
+
+        # Crear frame para el treeview
+        self.frame_treeview = ctk.CTkFrame(self.tab_compras, width=1350, height=500)
+        self.frame_treeview.place(x=10, y=70)
+
+        # Inicializar tree_compras
+        self.tree_compras = ttk.Treeview(self.frame_treeview, columns=("Nombre", "Cantidad", "Precio"), show="headings", height=30)
+        self.tree_compras.heading("Nombre", text="Nombre")
+        self.tree_compras.column("Nombre", width=450, anchor="center")
+        self.tree_compras.heading("Cantidad", text="Cantidad")
+        self.tree_compras.column("Cantidad", width=450, anchor="center")
+        self.tree_compras.heading("Precio", text="Precio")
+        self.tree_compras.column("Precio", width=450, anchor="center")
+        self.tree_compras.place(x=10, y=10)
+
+        # Botón de generar boleta
+        self.boton_boleta = ctk.CTkButton(frame_formulario, text="Generar Boleta", command=self.generar_boleta)
+        self.boton_boleta.place(x=600, y=600)
+            
+    def cargar_combos_compras(self):
+        try:
+            if hasattr(self, 'combo_clientes') and self.combo_clientes is not None:
+                # Cargar clientes
+                clientes = self.cliente_crud.listar_clientes()
+                cliente_nombres = [cliente[1] for cliente in clientes]
+                self.combo_clientes.configure(values=cliente_nombres)
+                if cliente_nombres:
+                    self.combo_clientes.set(cliente_nombres[0])
+
+            if hasattr(self, 'combo_menu') and self.combo_menu is not None:
+                # Cargar menús
+                menus = self.menu_crud.listar_menus()
+                menu_nombres = [menu[1] for menu in menus]
+                self.combo_menu.configure(values=menu_nombres)
+                if menu_nombres:
+                    self.combo_menu.set(menu_nombres[0])
+
+        except Exception as e:
+            print(f"Error al cargar combos: {str(e)}")
+            messagebox.showerror("Error", f"No se pudieron cargar los datos: {str(e)}")
+                
+    # 2. Modificar el método agregar_a_compra para obtener la cantidad
+    def agregar_a_compra(self):
+        cliente_seleccionado = self.combo_clientes.get()
+        menu_seleccionado = self.combo_menu.get()
+        cantidad = self.entry_cantidad.get()
+
+        # Validar que la cantidad sea un número y mayor que 0
+        if not cantidad.isdigit() or int(cantidad) <= 0:
+            messagebox.showerror("Error", "Cantidad no válida")
+            return
+        
+        cantidad = int(cantidad)  # Convertir cantidad a entero
+
+        print(f"[DEBUG] Cliente seleccionado: {cliente_seleccionado}")
+        print(f"[DEBUG] Menú seleccionado: {menu_seleccionado}")
+        print(f"[DEBUG] Cantidad: {cantidad}")
+
+        if not cliente_seleccionado or not menu_seleccionado:
+            messagebox.showerror("Error", "Seleccione cliente y menú")
+            print("[DEBUG] Error: Cliente o menú no seleccionados")
+            return
+
+        try:
+            # Obtener IDs de cliente y menú
+            cliente = self.cliente_crud.obtener_cliente_por_nombre(cliente_seleccionado)
+            menu = self.menu_crud.obtener_menu_por_nombre(menu_seleccionado)
+
+            print(f"[DEBUG] Cliente obtenido: {cliente}")
+            print(f"[DEBUG] Menú obtenido: {menu}")
+
+            if not cliente or not menu:
+                messagebox.showerror("Error", "Cliente o menú no encontrado")
+                print("[DEBUG] Error: Cliente o menú no encontrados en la base de datos")
+                return
+
+            cliente_id = cliente[0]
+            menu_id = menu[0]
+
+            # Obtener ingredientes del menú
+            ingredientes_menu = self.menu_crud.obtener_ingredientes_menu(menu_id)
+            print(f"[DEBUG] Ingredientes del menú: {ingredientes_menu}")
+
+            # Calcular total del pedido usando el precio del menú
+            total = menu[3] * cantidad  # Precio del menú multiplicado por la cantidad
+            print(f"[DEBUG] Total del pedido calculado: {total}")
+
+            # Crear pedido en la base de datos
+            pedido_id = self.pedido_crud.crear_pedido(cliente_id, menu_id, total)
+            print(f"[DEBUG] Pedido creado con ID: {pedido_id}")
+
+            # Agregar al treeview con la cantidad
+            self.tree_compras.insert('', 'end', values=(menu[1], cantidad, menu[3]))
+
+            messagebox.showinfo("Éxito", f"Pedido {pedido_id} creado")
+
+        except Exception as e:
+            error_message = str(e)
+            print(f"[DEBUG] Error inesperado: {error_message}")
+            messagebox.showerror("Error", error_message)
+
+    def generar_boleta(self):
+        # Implementar generación de boleta
+        messagebox.showinfo("Boleta", "Función de generación de boleta pendiente")
+
 
     def configurar_pedidos(self):
+
+        # Inicializar atributos de clase
+        self.label_total = None
+        self.tree_pedidos = None
+        self.combobox_cliente = None
+
         # Crear un frame para la lista de pedidos y opciones de organización
         frame_superior = ctk.CTkFrame(self.tab_pedidos, height=200)
         frame_superior.pack(side="top", fill="x", expand=False, padx=10, pady=10)
@@ -688,14 +775,23 @@ class SistemaGestionRestaurante(ctk.CTk):
         # Combobox para seleccionar cliente
         label_cliente = ctk.CTkLabel(frame_superior, text="Seleccionar Cliente:")
         label_cliente.pack(side="left", padx=5)
-        combobox_cliente = ttk.Combobox(frame_superior)
-        combobox_cliente.pack(side="left", padx=5)
+        
+        # Populate clients ComboBox
+        self.combobox_cliente = ctk.CTkComboBox(frame_superior, values=[])
+        self.combobox_cliente.pack(side="left", padx=5)
+
+        # Cargar clientes al inicializar
+        self.cargar_clientes_pedidos()
+
+        # Botón para filtrar por cliente
+        boton_filtrar_cliente = ctk.CTkButton(frame_superior, text="Filtrar por Cliente", command=self.filtrar_pedidos_por_cliente)
+        boton_filtrar_cliente.pack(side="left", padx=5)
 
         # Crear botones para organizar la lista de pedidos
-        boton_organizar_fecha = ctk.CTkButton(frame_superior, text="Ordenar por Fecha")
+        boton_organizar_fecha = ctk.CTkButton(frame_superior, text="Ordenar por Fecha", command=self.ordenar_pedidos_por_fecha)
         boton_organizar_fecha.pack(side="left", padx=5)
 
-        boton_organizar_cliente = ctk.CTkButton(frame_superior, text="Ordenar por Cliente")
+        boton_organizar_cliente = ctk.CTkButton(frame_superior, text="Ordenar por Cliente", command=self.ordenar_pedidos_por_cliente)
         boton_organizar_cliente.pack(side="left", padx=5)
 
         # Crear un frame para mostrar la lista de pedidos
@@ -703,24 +799,95 @@ class SistemaGestionRestaurante(ctk.CTk):
         frame_treeview.pack(side="top", fill="both", expand=True, padx=10, pady=10)
 
         # Crear el Treeview para mostrar los pedidos
-        tree = ttk.Treeview(frame_treeview, columns=("Cliente", "Fecha", "Total"), show="headings")
-        tree.heading("Cliente", text="Cliente")
-        tree.heading("Fecha", text="Fecha")
-        tree.heading("Total", text="Total")
-        tree.pack(expand=True, fill="both")
+        self.tree_pedidos = ttk.Treeview(frame_treeview, columns=("ID", "Cliente", "Fecha", "Total"), show="headings")
+        self.tree_pedidos.heading("ID", text="ID Pedido")
+        self.tree_pedidos.heading("Cliente", text="Cliente")
+        self.tree_pedidos.heading("Fecha", text="Fecha")
+        self.tree_pedidos.heading("Total", text="Total")
+        self.tree_pedidos.pack(expand=True, fill="both")
+
+        # Cargar pedidos inicialmente
+        self.cargar_pedidos()
 
         # Crear un frame inferior para el total y otras acciones
         frame_inferior = ctk.CTkFrame(self.tab_pedidos)
         frame_inferior.pack(side="bottom", fill="x", padx=10, pady=10)
 
         # Etiqueta para mostrar el total del pedido
-        label_total = ctk.CTkLabel(frame_inferior, text="Total: 0 CLP", font=("Arial", 14))
-        label_total.pack(side="left", padx=10)
+        self.label_total = ctk.CTkLabel(frame_inferior, text="Total: 0 CLP", font=("Arial", 14))
+        self.label_total.pack(side="left", padx=10)
 
         # Botón para confirmar la revisión
-        boton_confirmar = ctk.CTkButton(frame_inferior, text="Confirmar Pedido")
+        boton_confirmar = ctk.CTkButton(frame_inferior, text="Confirmar Pedido", command=self.confirmar_pedido)
         boton_confirmar.pack(side="right", padx=10)
 
+    def cargar_clientes_pedidos(self):
+        try:
+            # Cargar clientes
+            clientes = self.cliente_crud.listar_clientes()
+            cliente_nombres = [cliente[1] for cliente in clientes]
+            self.combobox_cliente.configure(values=cliente_nombres)
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudieron cargar los clientes: {e}")
+
+    def cargar_pedidos(self):
+        try:
+            # Obtener todos los pedidos con información de cliente
+            pedidos = self.pedido_crud.listar_pedidos_con_cliente()
+            
+            # Limpiar treeview existente
+            for i in self.tree_pedidos.get_children():
+                self.tree_pedidos.delete(i)
+            
+            # Insertar pedidos en el treeview
+            total_pedidos = 0
+            for pedido in pedidos:
+                total_pedidos += pedido[3]
+                self.tree_pedidos.insert('', 'end', values=(pedido[0], pedido[1], pedido[2], pedido[3]))
+            
+            # Actualizar etiqueta de total
+            self.label_total.configure(text=f"Total: {total_pedidos} CLP")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudieron cargar los pedidos: {e}")
+            
+    def filtrar_pedidos_por_cliente(self):
+        cliente_seleccionado = self.combobox_cliente.get()
+        
+        if not cliente_seleccionado:
+            self.cargar_pedidos()
+            return
+        
+        try:
+            # Obtener pedidos del cliente seleccionado
+            pedidos = self.pedido_crud.listar_pedidos_por_cliente(cliente_seleccionado)
+            
+            # Limpiar treeview existente
+            for i in self.tree_pedidos.get_children():
+                self.tree_pedidos.delete(i)
+            
+            # Insertar pedidos en el treeview
+            total_pedidos = 0
+            for pedido in pedidos:
+                total_pedidos += pedido[3]
+                self.tree_pedidos.insert('', 'end', values=(pedido[0], pedido[1], pedido[2], pedido[3]))
+            
+            # Actualizar etiqueta de total
+            self.label_total.configure(text=f"Total: {total_pedidos} CLP")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudieron filtrar los pedidos: {e}")
+
+    def ordenar_pedidos_por_fecha(self):
+        # Lógica para ordenar pedidos por fecha
+        messagebox.showinfo("Ordenar", "Función de ordenamiento por fecha pendiente")
+
+    def ordenar_pedidos_por_cliente(self):
+        # Lógica para ordenar pedidos por cliente
+        messagebox.showinfo("Ordenar", "Función de ordenamiento por cliente pendiente")
+
+    def confirmar_pedido(self):
+        # Lógica para confirmar pedido
+        messagebox.showinfo("Confirmar", "Función de confirmación de pedido pendiente")
+        
     def configurar_graficos(self):
         # Configuración de gráficos
         label = ctk.CTkLabel(self.tab_graficos, text="Selecciona un tipo de gráfico:")
@@ -728,3 +895,16 @@ class SistemaGestionRestaurante(ctk.CTk):
 
         combo = ttk.Combobox(self.tab_graficos, values=["Ventas Diarias", "Ventas Semanales", "Ventas Mensuales", "Ventas Anuales"])
         combo.place(x=20, y=60)
+
+    def debug_pedido(self):
+        print("\n=== Debug Información ===")
+        print(f"Cliente seleccionado: {self.combo_clientes.get()}")
+        print(f"Menú seleccionado: {self.combo_menu.get()}")
+        print("\nClientes disponibles:")
+        clientes = self.cliente_crud.listar_clientes()
+        for cliente in clientes:
+            print(f"ID: {cliente[0]}, Nombre: {cliente[1]}")
+        print("\nMenús disponibles:")
+        menus = self.menu_crud.listar_menus()
+        for menu in menus:
+            print(f"ID: {menu[0]}, Nombre: {menu[1]}")  
