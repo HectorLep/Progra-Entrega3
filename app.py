@@ -5,6 +5,8 @@ from CRUD.ingrediente_crud import IngredienteCRUD
 from CRUD.menu_crud import MenuCRUD
 from tkinter import ttk, messagebox
 import sqlite3
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class SistemaGestionRestaurante(ctk.CTk):
     def __init__(self):
@@ -889,12 +891,55 @@ class SistemaGestionRestaurante(ctk.CTk):
         messagebox.showinfo("Confirmar", "Función de confirmación de pedido pendiente")
         
     def configurar_graficos(self):
-        # Configuración de gráficos
+        # Etiqueta y combobox
         label = ctk.CTkLabel(self.tab_graficos, text="Selecciona un tipo de gráfico:")
         label.place(x=20, y=20)
 
-        combo = ttk.Combobox(self.tab_graficos, values=["Ventas Diarias", "Ventas Semanales", "Ventas Mensuales", "Ventas Anuales"])
-        combo.place(x=20, y=60)
+        self.combo_graficos = ttk.Combobox(
+            self.tab_graficos,
+            values=["Ventas Diarias", "Ventas Semanales", "Ventas Mensuales", "Ventas Anuales"],
+            state="readonly"
+        )
+        self.combo_graficos.place(x=20, y=60)
+        self.combo_graficos.bind("<<ComboboxSelected>>", self.actualizar_grafico)
+
+        # Marco para el gráfico
+        self.frame_grafico = ctk.CTkFrame(self.tab_graficos, width=1000, height=600)
+        self.frame_grafico.place(x=20, y=100)
+
+    def actualizar_grafico(self, event):
+        # Limpiar cualquier gráfico anterior
+        for widget in self.frame_grafico.winfo_children():
+            widget.destroy()
+
+        # Obtener la selección actual
+        seleccion = self.combo_graficos.get()
+
+        # Crear un nuevo gráfico según la selección
+        fig, ax = plt.subplots(figsize=(8, 4))
+        if seleccion == "Ventas Diarias":
+            ax.plot(["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"], [200, 450, 300, 400, 600], label="Ventas")
+            ax.set_title("Ventas Diarias")
+            ax.set_xlabel("Días")
+            ax.set_ylabel("Ventas (CLP)")
+        elif seleccion == "Ventas Semanales":
+            ax.bar(["Semana 1", "Semana 2", "Semana 3", "Semana 4"], [1500, 1800, 1700, 2000], color="blue")
+            ax.set_title("Ventas Semanales")
+            ax.set_xlabel("Semanas")
+            ax.set_ylabel("Ventas (CLP)")
+        elif seleccion == "Ventas Mensuales":
+            ax.pie([20, 30, 25, 25], labels=["Producto A", "Producto B", "Producto C", "Producto D"], autopct="%1.1f%%")
+            ax.set_title("Ventas Mensuales")
+        elif seleccion == "Ventas Anuales":
+            ax.plot(["Enero", "Febrero", "Marzo", "Abril", "Mayo"], [5000, 5200, 5100, 5300, 5400], label="Ventas")
+            ax.set_title("Ventas Anuales")
+            ax.set_xlabel("Meses")
+            ax.set_ylabel("Ventas (CLP)")
+
+        # Insertar gráfico en el frame
+        canvas = FigureCanvasTkAgg(fig, self.frame_grafico)
+        canvas.get_tk_widget().pack()
+        canvas.draw()
 
     def debug_pedido(self):
         print("\n=== Debug Información ===")
