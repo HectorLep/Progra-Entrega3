@@ -1,160 +1,89 @@
-import customtkinter as ctk
-import tkinter as tk
-from tkinter import messagebox
-from app import SistemaGestionRestaurante
-from CRUD.cliente_crud import ClienteCRUD
-from CRUD.menu_crud import MenuCRUD
-from CRUD.ingrediente_crud import IngredienteCRUD
-from CRUD.pedido_crud import PedidoCRUD
-import sqlite3
+from sqlalchemy import Column, String, Integer, Float, CheckConstraint, ForeignKey, DateTime
+from sqlalchemy.orm import relationship, declarative_base
+from datetime import datetime
 
-class Models():
-    def __init__(self):
-        self.menu_crud = MenuCRUD()
-        self.ingrediente_crud = IngredienteCRUD()
-        self.pedido_crud = PedidoCRUD()
-        self.cliente_crud = ClienteCRUD()
-        self.app = SistemaGestionRestaurante()
+Base = declarative_base()
 
-    def actualizar_menu(self):
-        selected_item = self.tree_menus.selection()
-        if not selected_item:
-            messagebox.showerror("Error", "Seleccione un menú para actualizar")
-            return
-        
-        nombre = self.entry_nombre_menu.get()
-        descripcion = self.entry_descripcion_menu.get()
-        
-        # Obtener el menú seleccionado
-        menu_nombre = self.tree_menus.item(selected_item[0])['values'][0]
-        menu = self.menu_crud.obtener_menu_por_nombre(menu_nombre)
-        
-        if not menu:
-            messagebox.showerror("Error", "Menú no encontrado")
-            return
-        
-        # Collect selected ingredients with quantities
-        ingredientes_menu = []
-        for selected_ingrediente in self.lista_ingredientes.selection():
-            ingrediente = self.lista_ingredientes.item(selected_ingrediente)['values']
-            cantidad = self.entry_cantidad_ingrediente_menu.get()
-            
-            try:
-                cantidad = float(cantidad)
-                # Obtener el ID del ingrediente de la base de datos
-                ingredientes = self.ingrediente_crud.listar_ingredientes()
-                ingrediente_id = next(ing[0] for ing in ingredientes if ing[1] == ingrediente[0])
-                ingredientes_menu.append((ingrediente_id, cantidad))
-            except (ValueError, StopIteration):
-                messagebox.showerror("Error", "Error al procesar ingredientes")
-                return
-        
-        try:
-            # Actualizar menú en la base de datos
-            self.menu_crud.actualizar_menu(menu[0], nombre, descripcion, ingredientes_menu)
-            messagebox.showinfo("Éxito", "Menú actualizado")
-            
-            # Limpiar entradas
-            self.entry_nombre_menu.delete(0, 'end')
-            self.entry_descripcion_menu.delete(0, 'end')
-            self.entry_cantidad_ingrediente_menu.delete(0, 'end')
-            
-            # Actualizar lista de menús
-            self.actualizar_lista_menus()
-        
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
+class Cliente(Base):
+    __tablename__ = 'clientes'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    nombre = Column(String, nullable=False)
+    correo_electronico = Column(String, unique=True, nullable=False)
+    pedidos = relationship("Pedido", back_populates="cliente", cascade="all, delete-orphan")
 
-    def eliminar_menu(self):
-        selected_item = self.tree_menus.selection()
-        if not selected_item:
-            messagebox.showerror("Error", "Seleccione un menú para eliminar")
-            return
-        
-        # Obtener el menú seleccionado
-        menu_nombre = self.tree_menus.item(selected_item[0])['values'][0]
-        menu = self.menu_crud.obtener_menu_por_nombre(menu_nombre)
-        
-        if not menu:
-            messagebox.showerror("Error", "Menú no encontrado")
-            return
-        
-        respuesta = messagebox.askyesno("Confirmar", "¿Está seguro de eliminar este menú?")
-        if respuesta:
-            try:
-                # Eliminar menú de la base de datos
-                self.menu_crud.eliminar_menu(menu[0])
-                messagebox.showinfo("Éxito", "Menú eliminado")
-                
-                # Limpiar entradas
-                self.entry_nombre_menu.delete(0, 'end')
-                self.entry_descripcion_menu.delete(0, 'end')
-                self.entry_cantidad_ingrediente_menu.delete(0, 'end')
-                
-                # Actualizar lista de menús
-                self.actualizar_lista_menus()
-            except Exception as e:
-                messagebox.showerror("Error", str(e))
+    def __repr__(self):
+        return f"<Cliente(nombre='{self.nombre}', correo_electronico='{self.correo_electronico}')>"
 
+class Pedido(Base):
+    __tablename__ = 'pedidos'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    descripcion = Column(String, nullable=False)
+    cliente_id = Column(Integer, ForeignKey('clientes.id', onupdate="CASCADE"), nullable=False)
+    menu_id = Column(Integer, ForeignKey('menus.id', onupdate="CASCADE"), nullable=False)
+    total = Column(Float, nullable=False)
+    fecha = Column(DateTime, nullable=False, default=datetime.now)
+    
+    cliente = relationship("Cliente", back_populates="pedidos")
+    menu = relationship("Menu", back_populates="pedidos")
 
+    def __repr__(self):
+        return f"<Pedido(descripcion='{self.descripcion}', cliente_id={self.cliente_id}, total={self.total})>"
 
-    def agregar_menu(self):
-        nombre = self.entry_nombre_menu.get()
-        descripcion = self.entry_descripcion_menu.get()
-        
-        if not nombre or not descripcion:
-            messagebox.showerror("Error", "Nombre y descripción son requeridos")
-            return
-        
-        # Collect selected ingredients with quantities
-        ingredientes_menu = []
-        for selected_item in self.lista_ingredientes.selection():
-            ingrediente = self.lista_ingredientes.item(selected_item)['values']
-            cantidad = self.entry_cantidad_ingrediente_menu.get()
-            
-            try:
-                cantidad = float(cantidad)
-                # Obtener el ID del ingrediente de la base de datos
-                ingredientes = self.ingrediente_crud.listar_ingredientes()
-                ingrediente_id = next(ing[0] for ing in ingredientes if ing[1] == ingrediente[0])
-                ingredientes_menu.append((ingrediente_id, cantidad))
-            except (ValueError, StopIteration):
-                messagebox.showerror("Error", "Error al procesar ingredientes")
-                return
-        
-        if not ingredientes_menu:
-            messagebox.showerror("Error", "Seleccione al menos un ingrediente")
-            return
-        
-        try:
-            # Crear menú en la base de datos
-            menu_id = self.menu_crud.crear_menu(nombre, descripcion, ingredientes_menu)
-            messagebox.showinfo("Éxito", f"Menú creado con ID: {menu_id}")
-            
-            # Limpiar entradas
-            self.entry_nombre_menu.delete(0, 'end')
-            self.entry_descripcion_menu.delete(0, 'end')
-            self.entry_cantidad_ingrediente_menu.delete(0, 'end')
-            
-            # Actualizar lista de menús
-            self.actualizar_lista_menus()
-        
-        except sqlite3.IntegrityError:
-            messagebox.showerror("Error", "El menú ya existe")
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
+class Ingrediente(Base):
+    __tablename__ = 'ingredientes'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    nombre = Column(String(100), unique=True, nullable=False)
+    tipo = Column(String(50), nullable=False)
+    cantidad = Column(Float, nullable=False)
+    unidad_medida = Column(String(20), nullable=False)
 
-    def actualizar_lista_menus(self):
-        # Limpiar elementos existentes
-        for i in self.tree_menus.get_children():
-            self.tree_menus.delete(i)
-        
-        # Obtener y poblar menús
-        menus = self.menu_crud.listar_menus()
-        for menu in menus:
-            # Obtener ingredientes del menú
-            ingredientes = self.menu_crud.obtener_ingredientes_menu(menu[0])
-            ingredientes_str = ", ".join([f"{ing[1]} ({ing[2]})" for ing in ingredientes])
-            
-            # Insertar en el treeview
-            self.tree_menus.insert('', 'end', values=(menu[1], menu[2], ingredientes_str))
+    menus = relationship("MenuIngrediente", back_populates="ingrediente")
+
+    __table_args__ = (
+        CheckConstraint('cantidad >= 0', name='cantidad_positiva'),
+        CheckConstraint("tipo IN ('Verdura', 'Fruta', 'Carne', 'Lácteo', 'Grano', 'Otro')", name='tipo_valido')
+    )
+
+    def __repr__(self):
+        return f"<Ingrediente(nombre='{self.nombre}', tipo='{self.tipo}', cantidad={self.cantidad} {self.unidad_medida})>"
+
+class MenuIngrediente(Base):
+    __tablename__ = 'menu_ingredientes'
+    
+    menu_id = Column(Integer, ForeignKey('menus.id', onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
+    ingrediente_id = Column(Integer, ForeignKey('ingredientes.id', onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
+    cantidad = Column(Float, nullable=False)
+    
+    menu = relationship("Menu", back_populates="ingredientes_association")
+    ingrediente = relationship("Ingrediente", back_populates="menus")
+
+    def __repr__(self):
+        return f"<MenuIngrediente(menu_id={self.menu_id}, ingrediente_id={self.ingrediente_id}, cantidad={self.cantidad})>"
+
+class Menu(Base):
+    __tablename__ = 'menus'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    nombre = Column(String, unique=True, nullable=False)
+    descripcion = Column(String, nullable=False)
+    precio = Column(Float, nullable=False)
+    
+    ingredientes_association = relationship("MenuIngrediente", back_populates="menu", cascade="all, delete-orphan")
+    pedidos = relationship("Pedido", back_populates="menu", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        CheckConstraint('precio >= 0', name='precio_positivo'),
+    )
+
+    def __repr__(self):
+        return f"<Menu(nombre='{self.nombre}', descripcion='{self.descripcion}', precio={self.precio})>"
+
+    @property
+    def ingredientes(self):
+        """
+        Obtiene la lista de ingredientes asociados al menú
+        """
+        return [assoc.ingrediente for assoc in self.ingredientes_association]

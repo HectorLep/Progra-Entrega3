@@ -197,7 +197,7 @@ class MenuCRUD:
             cursor = conn.cursor()
             cursor.execute('''
                 SELECT id, nombre, descripcion, precio 
-                FROM menus 
+                FROM menu 
                 WHERE nombre = ?
             ''', (nombre,))
             return cursor.fetchone()
