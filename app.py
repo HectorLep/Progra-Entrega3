@@ -27,6 +27,9 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.tabview.place(x=20, y=20)
         self.crear_pestanas()
 
+        # Cargar ingredientes iniciales
+        self.cargar_ingredientes_en_treeview()
+
     def crear_pestanas(self):
         # Crear las pestañas
         self.tab_ingredientes = self.tabview.add("Ingredientes")
@@ -52,22 +55,26 @@ class SistemaGestionRestaurante(ctk.CTk):
         # Etiquetas y entradas
         label_nombre = ctk.CTkLabel(frame_formulario, text="Nombre:")
         label_nombre.place(x=20, y=20)
-        self.entry_nombre_ingrediente = ctk.CTkEntry(frame_formulario)
+        self.entry_nombre_ingrediente = ctk.CTkEntry(frame_formulario, width=200)
         self.entry_nombre_ingrediente.place(x=100, y=20)
 
         label_tipo = ctk.CTkLabel(frame_formulario, text="Tipo:")
-        label_tipo.place(x=250, y=20)
-        self.entry_tipo_ingrediente = ctk.CTkEntry(frame_formulario)
-        self.entry_tipo_ingrediente.place(x=330, y=20)
+        label_tipo.place(x=350, y=20)
+        
+        # Dropdown para tipos de ingredientes
+        tipos_ingredientes = ["Verdura", "Fruta", "Carne", "Lácteo", "Grano", "Otro"]
+        self.entry_tipo_ingrediente = ctk.CTkOptionMenu(frame_formulario, values=tipos_ingredientes)
+        self.entry_tipo_ingrediente.place(x=420, y=20)
 
         label_cantidad = ctk.CTkLabel(frame_formulario, text="Cantidad:")
         label_cantidad.place(x=20, y=50)
-        self.entry_cantidad_ingrediente = ctk.CTkEntry(frame_formulario)
+        self.entry_cantidad_ingrediente = ctk.CTkEntry(frame_formulario, width=100)
         self.entry_cantidad_ingrediente.place(x=100, y=50)
 
         label_unidad = ctk.CTkLabel(frame_formulario, text="Unidad de Medida:")
         label_unidad.place(x=250, y=50)
-        self.entry_unidad_ingrediente = ctk.CTkEntry(frame_formulario)
+        unidades_medida = ["Unidades", "Kilogramos", "Gramos", "Litros", "Mililitros"]
+        self.entry_unidad_ingrediente = ctk.CTkOptionMenu(frame_formulario, values=unidades_medida)
         self.entry_unidad_ingrediente.place(x=400, y=50)
 
         # Botones de acción
@@ -82,9 +89,9 @@ class SistemaGestionRestaurante(ctk.CTk):
 
         # Crear treeview manualmente
         frame_treeview = ctk.CTkFrame(self.tab_ingredientes, width=1350, height=500)
-        frame_treeview.place(x=10, y=150)
+        frame_treeview.place(x=10, y=200)
 
-        self.tree_ingredientes = ttk.Treeview(frame_treeview, columns=["ID", "Nombre", "Tipo", "Cantidad", "Unidad"], show="headings", height=30)
+        self.tree_ingredientes = ttk.Treeview(frame_treeview, columns=["ID", "Nombre", "Tipo", "Cantidad", "Unidad"], show="headings", height=20)
         self.tree_ingredientes.heading("ID", text="ID")
         self.tree_ingredientes.column("ID", width=50, anchor="center")
         self.tree_ingredientes.heading("Nombre", text="Nombre")
@@ -97,145 +104,168 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.tree_ingredientes.column("Unidad", width=250, anchor="center")
         self.tree_ingredientes.place(x=10, y=10)
 
-        # Enlazar evento de selección
+        # Bind de eventos para seleccionar un ingrediente
         self.tree_ingredientes.bind('<ButtonRelease-1>', self.seleccionar_ingrediente)
 
-        # Actualizar lista inicial
-        self.actualizar_lista_ingredientes()
-
     def agregar_ingrediente(self):
+        # Validar campos
+        nombre = self.entry_nombre_ingrediente.get().strip()
+        tipo = self.entry_tipo_ingrediente.get()
+        
         try:
-            # Obtener y validar datos
-            nombre = self.entry_nombre_ingrediente.get().strip()
-            tipo = self.entry_tipo_ingrediente.get().strip()
-            cantidad_str = self.entry_cantidad_ingrediente.get().strip()
-            unidad = self.entry_unidad_ingrediente.get().strip()
-            
-            # Validaciones específicas
-            if not all([nombre, tipo, cantidad_str, unidad]):
-                messagebox.showerror("Error", "Todos los campos son requeridos")
-                return
-            
-            try:
-                cantidad = int(cantidad_str)
-                if cantidad < 0:
-                    messagebox.showerror("Error", "La cantidad no puede ser negativa")
-                    return
-            except ValueError:
-                messagebox.showerror("Error", "La cantidad debe ser un número entero válido")
-                return
-            
-            # Intentar crear el ingrediente
-            ingrediente_id = self.ingrediente_crud.crear_ingrediente(
-                nombre=nombre,
-                tipo=tipo,
-                cantidad=cantidad,
-                unidad_medida=unidad
-            )
-            
-            messagebox.showinfo("Éxito", f"Ingrediente creado con ID: {ingrediente_id}")
-            self.limpiar_entradas_ingrediente()
-            self.actualizar_lista_ingredientes()
-            
-        except ValueError as e:
-            messagebox.showerror("Error de Validación", str(e))
-        except SQLAlchemyError as e:
-            messagebox.showerror("Error de Base de Datos", f"No se pudo crear el ingrediente: {str(e)}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Error inesperado: {str(e)}")
+            cantidad = float(self.entry_cantidad_ingrediente.get())
+        except ValueError:
+            messagebox.showerror("Error", "La cantidad debe ser un número válido.")
+            return
+        
+        unidad = self.entry_unidad_ingrediente.get()
 
-            
-    def actualizar_lista_ingredientes(self):
-        # Limpiar treeview
+        # Validaciones
+        if not nombre:
+            messagebox.showerror("Error", "El nombre del ingrediente no puede estar vacío.")
+            return
+
+        # Verificar si ya existe un ingrediente con ese nombre
+        ingrediente_existente = self.ingrediente_crud.obtener_ingrediente_por_nombre(nombre)
+        if ingrediente_existente:
+            messagebox.showerror("Error", f"Ya existe un ingrediente con el nombre '{nombre}'.")
+            return
+
+        # Intentar crear ingrediente
+        try:
+            nuevo_id = self.ingrediente_crud.crear_ingrediente(nombre, tipo, cantidad, unidad)
+            if nuevo_id:
+                messagebox.showinfo("Éxito", f"Ingrediente '{nombre}' creado con ID {nuevo_id}")
+                
+                # Limpiar campos
+                self.entry_nombre_ingrediente.delete(0, 'end')
+                self.entry_cantidad_ingrediente.delete(0, 'end')
+                
+                # Recargar lista de ingredientes
+                self.cargar_ingredientes_en_treeview()
+            else:
+                messagebox.showerror("Error", "No se pudo crear el ingrediente.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error: {str(e)}")
+
+    def cargar_ingredientes_en_treeview(self):
+        # Limpiar treeview actual
         for item in self.tree_ingredientes.get_children():
             self.tree_ingredientes.delete(item)
         
-        # Obtener y mostrar ingredientes
-        try:
-            ingredientes = self.ingrediente_crud.listar_ingredientes()
-            for ingrediente in ingredientes:
-                self.tree_ingredientes.insert('', 'end', values=(
-                    ingrediente.id,
-                    ingrediente.nombre,
-                    ingrediente.tipo,
-                    ingrediente.cantidad,
-                    ingrediente.unidad_medida
-                ))
-        except SQLAlchemyError as e:
-            messagebox.showerror("Error", f"Error al cargar ingredientes: {str(e)}")
-
-    def actualizar_ingrediente(self):
-        selected_item = self.tree_ingredientes.selection()
-        if not selected_item:
-            messagebox.showerror("Error", "Seleccione un ingrediente para actualizar")
-            return
+        # Obtener todos los ingredientes
+        ingredientes = self.ingrediente_crud.listar_ingredientes()
         
-        ingrediente_id = self.tree_ingredientes.item(selected_item[0])['values'][0]
-        
-        nombre = self.entry_nombre_ingrediente.get()
-        tipo = self.entry_tipo_ingrediente.get()
-        cantidad = self.entry_cantidad_ingrediente.get()
-        unidad = self.entry_unidad_ingrediente.get()
-        
-        try:
-            cantidad = float(cantidad) if cantidad else None
-            actualizado = self.ingrediente_crud.actualizar_ingrediente(
-                ingrediente_id, nombre, tipo, cantidad, unidad
-            )
-            
-            if actualizado:
-                messagebox.showinfo("Éxito", "Ingrediente actualizado correctamente")
-                self.limpiar_entradas_ingrediente()
-                self.actualizar_lista_ingredientes()
-            else:
-                messagebox.showerror("Error", "No se pudo actualizar el ingrediente")
-        
-        except ValueError:
-            messagebox.showerror("Error", "La cantidad debe ser un número")
-        except SQLAlchemyError as e:
-            messagebox.showerror("Error", f"Error de base de datos: {str(e)}")
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-
-    def eliminar_ingrediente(self):
-        selected_item = self.tree_ingredientes.selection()
-        if not selected_item:
-            messagebox.showerror("Error", "Seleccione un ingrediente para eliminar")
-            return
-        
-        ingrediente_id = self.tree_ingredientes.item(selected_item[0])['values'][0]
-        
-        if messagebox.askyesno("Confirmar", "¿Está seguro de eliminar este ingrediente?"):
-            try:
-                eliminado = self.ingrediente_crud.eliminar_ingrediente(ingrediente_id)
-                if eliminado:
-                    messagebox.showinfo("Éxito", "Ingrediente eliminado correctamente")
-                    self.limpiar_entradas_ingrediente()
-                    self.actualizar_lista_ingredientes()
-                else:
-                    messagebox.showerror("Error", "No se pudo eliminar el ingrediente")
-            except SQLAlchemyError as e:
-                messagebox.showerror("Error", f"Error de base de datos: {str(e)}")
-            except Exception as e:
-                messagebox.showerror("Error", str(e))
+        # Insertar ingredientes en el treeview
+        for ingrediente in ingredientes:
+            self.tree_ingredientes.insert("", "end", values=(
+                ingrediente.id, 
+                ingrediente.nombre, 
+                ingrediente.tipo, 
+                ingrediente.cantidad, 
+                ingrediente.unidad_medida
+            ))
 
     def seleccionar_ingrediente(self, event):
-        selected_item = self.tree_ingredientes.selection()
-        if selected_item:
-            valores = self.tree_ingredientes.item(selected_item[0])['values']
-            self.limpiar_entradas_ingrediente()
-            
-            self.entry_nombre_ingrediente.insert(0, valores[1])
-            self.entry_tipo_ingrediente.insert(0, valores[2])
-            self.entry_cantidad_ingrediente.insert(0, str(valores[3]))
-            self.entry_unidad_ingrediente.insert(0, valores[4])
-
-    def limpiar_entradas_ingrediente(self):
+        # Obtener el ingrediente seleccionado en el treeview
+        seleccion = self.tree_ingredientes.selection()
+        if not seleccion:
+            return
+        
+        # Obtener valores del ingrediente seleccionado
+        valores = self.tree_ingredientes.item(seleccion[0])['values']
+        
+        # Llenar los campos del formulario
         self.entry_nombre_ingrediente.delete(0, 'end')
-        self.entry_tipo_ingrediente.delete(0, 'end')
+        self.entry_nombre_ingrediente.insert(0, valores[1])
+        
+        self.entry_tipo_ingrediente.set(valores[2])
+        
         self.entry_cantidad_ingrediente.delete(0, 'end')
-        self.entry_unidad_ingrediente.delete(0, 'end')
+        self.entry_cantidad_ingrediente.insert(0, str(valores[3]))
+        
+        self.entry_unidad_ingrediente.set(valores[4])
 
+    def actualizar_ingrediente(self):
+        # Validar selección
+        seleccion = self.tree_ingredientes.selection()
+        if not seleccion:
+            messagebox.showerror("Error", "Seleccione un ingrediente para actualizar.")
+            return
+
+        # Obtener ID del ingrediente seleccionado
+        id_ingrediente = self.tree_ingredientes.item(seleccion[0])['values'][0]
+        
+        # Validar campos
+        nombre = self.entry_nombre_ingrediente.get().strip()
+        tipo = self.entry_tipo_ingrediente.get()
+        
+        try:
+            cantidad = float(self.entry_cantidad_ingrediente.get())
+        except ValueError:
+            messagebox.showerror("Error", "La cantidad debe ser un número válido.")
+            return
+        
+        unidad = self.entry_unidad_ingrediente.get()
+
+        # Validaciones
+        if not nombre:
+            messagebox.showerror("Error", "El nombre del ingrediente no puede estar vacío.")
+            return
+
+        # Intentar actualizar ingrediente
+        try:
+            resultado = self.ingrediente_crud.actualizar_ingrediente(
+                id=id_ingrediente, 
+                nombre=nombre, 
+                tipo=tipo, 
+                cantidad=cantidad, 
+                unidad_medida=unidad
+            )
+            
+            if resultado:
+                messagebox.showinfo("Éxito", f"Ingrediente '{nombre}' actualizado correctamente")
+                
+                # Recargar lista de ingredientes
+                self.cargar_ingredientes_en_treeview()
+            else:
+                messagebox.showerror("Error", "No se pudo actualizar el ingrediente.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error: {str(e)}")
+
+    def eliminar_ingrediente(self):
+        # Validar selección
+        seleccion = self.tree_ingredientes.selection()
+        if not seleccion:
+            messagebox.showerror("Error", "Seleccione un ingrediente para eliminar.")
+            return
+
+        # Obtener ID y nombre del ingrediente seleccionado
+        id_ingrediente = self.tree_ingredientes.item(seleccion[0])['values'][0]
+        nombre_ingrediente = self.tree_ingredientes.item(seleccion[0])['values'][1]
+
+        # Confirmar eliminación
+        confirmacion = messagebox.askyesno("Confirmar", f"¿Está seguro que desea eliminar el ingrediente '{nombre_ingrediente}'?")
+        
+        if confirmacion:
+            try:
+                resultado = self.ingrediente_crud.eliminar_ingrediente(id_ingrediente)
+                
+                if resultado:
+                    messagebox.showinfo("Éxito", f"Ingrediente '{nombre_ingrediente}' eliminado correctamente")
+                    
+                    # Limpiar campos
+                    self.entry_nombre_ingrediente.delete(0, 'end')
+                    self.entry_cantidad_ingrediente.delete(0, 'end')
+                    
+                    # Recargar lista de ingredientes
+                    self.cargar_ingredientes_en_treeview()
+                else:
+                    messagebox.showerror("Error", "No se pudo eliminar el ingrediente.")
+            except Exception as e:
+                messagebox.showerror("Error", f"Ocurrió un error: {str(e)}")
+
+                
     def configurar_menus(self):
         # Frame for menu form
         frame_formulario = ctk.CTkFrame(self.tab_menus, width=1400, height=700)
