@@ -12,6 +12,7 @@ from reportlab.lib.units import inch
 import os
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
+from models import Menu  # Add this import
 
 class SistemaGestionRestaurante(ctk.CTk):
     def __init__(self):
@@ -375,6 +376,13 @@ class SistemaGestionRestaurante(ctk.CTk):
             messagebox.showerror("Error", "El precio debe ser un número válido")
             return        
         
+        # Validar cantidad de menú
+        try:
+            cantidad_menu = int(self.entry_cant_ingredientes_menu.get().strip())
+        except ValueError:
+            messagebox.showerror("Error", "La cantidad de menú debe ser un número válido")
+            return
+        
         # Validar selección de ingredientes
         ingredientes_seleccionados = self.lista_ingredientes.selection()
         if not ingredientes_seleccionados:
@@ -388,30 +396,28 @@ class SistemaGestionRestaurante(ctk.CTk):
         for seleccion in ingredientes_seleccionados:
             ingrediente = self.lista_ingredientes.item(seleccion)['values'][0]
             
-            # Obtener cantidad de ingredientes del entry
-            cantidad_ingredientes_str = self.entry_cant_ingredientes_menu.get()
-            cantidad_ingredientes_menu_str = self.entry_cantidad_ingrediente_menu.get()
+            # Obtener cantidad de ingrediente del entry
+            cantidad_ingrediente_str = self.entry_cantidad_ingrediente_menu.get().strip()
             
             try:
-                cantidad_ingredientes = float(cantidad_ingredientes_str)
-                cantidad_por_ingrediente = float(cantidad_ingredientes_menu_str)
+                cantidad_ingrediente = float(cantidad_ingrediente_str)
             except ValueError:
-                messagebox.showerror("Error", "Las cantidades deben ser números válidos")
+                messagebox.showerror("Error", "La cantidad de ingrediente debe ser un número válido")
                 return
             
             # Obtener el ingrediente de la base de datos
             ingrediente_obj = self.ingrediente_crud.obtener_ingrediente_por_nombre(ingrediente)
             if ingrediente_obj:
                 # Calcular cantidad total a descontar
-                cantidad_total = cantidad_ingredientes * cantidad_por_ingrediente
+                cantidad_total = cantidad_menu * cantidad_ingrediente
                 
                 # Verificar si hay suficiente cantidad
                 if ingrediente_obj.cantidad < cantidad_total:
                     messagebox.showerror("Error", f"No hay suficiente {ingrediente} en inventario")
                     return
                 
-                ingredientes_menu.append((ingrediente_obj.id, cantidad_total))
-        
+                ingredientes_menu.append((ingrediente_obj.id, cantidad_ingrediente))
+            
         # Validaciones
         if not nombre:
             messagebox.showerror("Error", "El nombre del menú no puede estar vacío")
@@ -422,16 +428,27 @@ class SistemaGestionRestaurante(ctk.CTk):
         if menu_existente:
             messagebox.showerror("Error", f"Ya existe un menú con el nombre '{nombre}'")
             return
-            
+                
         try:
-            nuevo_id = self.menu_crud.crear_menu(nombre, descripcion, precio, ingredientes_menu)
+            # Crear menú con la cantidad de menú específica
+            nuevo_id = self.menu_crud.crear_menu(
+                nombre, 
+                descripcion, 
+                precio, 
+                ingredientes_menu, 
+                cantidad_menu  # Pasar cantidad de menú como un parámetro adicional
+            )
+            
             if nuevo_id:
                 # Descontar ingredientes
-                for ingrediente_id, cantidad_usada in ingredientes_menu:
+                for ingrediente_id, cantidad_ingrediente in ingredientes_menu:
                     ingrediente = self.ingrediente_crud.obtener_ingrediente(ingrediente_id)
                     if ingrediente:
+                        # Calcular cantidad total a descontar
+                        cantidad_total = cantidad_menu * cantidad_ingrediente
+                        
                         # Restar la cantidad usada del ingrediente
-                        nueva_cantidad = ingrediente.cantidad - cantidad_usada
+                        nueva_cantidad = ingrediente.cantidad - cantidad_total
                         self.ingrediente_crud.actualizar_ingrediente(
                             id=ingrediente_id, 
                             nombre=ingrediente.nombre, 
@@ -458,7 +475,7 @@ class SistemaGestionRestaurante(ctk.CTk):
         except Exception as e:
             messagebox.showerror("Error", f"Ocurrió un error: {str(e)}")
 
-            
+                
     def cargar_menus_en_treeview(self):
         # Limpiar treeview actual
         for item in self.tree_menus.get_children():
@@ -469,23 +486,22 @@ class SistemaGestionRestaurante(ctk.CTk):
         
         # Insertar menús en el treeview
         for menu in menus:
-            # Obtener ingredientes del menú
-            ingredientes = self.menu_crud.obtener_ingredientes_menu(menu[0])
-            
             # Formatear ingredientes
-            ingredientes_str = ", ".join([f"{ing[1]} ({ing[2]} ud)" for ing in ingredientes])
+            ingredientes_str = ", ".join([
+                f"{ing['nombre']} ({ing['cantidad_requerida']} {ing['unidad_medida']})" 
+                for ing in menu['ingredientes']
+            ])
             
             # Calcular cantidad total de ingredientes
-            cantidad_total = sum(ing[2] for ing in ingredientes)
+            cantidad_total = sum(ing['cantidad_requerida'] for ing in menu['ingredientes'])
             
             self.tree_menus.insert("", "end", values=(
-                menu[1],  # Nombre
-                menu[2],  # Descripción
+                menu['nombre'],  # Nombre
+                menu['descripcion'],  # Descripción
                 ingredientes_str,
-                menu[3],  # Precio
+                menu['precio'],  # Precio
                 cantidad_total  # Cantidad total de ingredientes
             ))
-
     def actualizar_menu(self):
         # Validar selección
         seleccion = self.tree_menus.selection()
@@ -823,14 +839,14 @@ class SistemaGestionRestaurante(ctk.CTk):
     def obtener_nombres_menus(self):
         """Obtiene la lista de nombres de menús y actualiza el combobox si existe"""
         menus = self.menu_crud.listar_menus()
-        nombres = [menu[1] for menu in menus]  # menu[1] es el nombre
+        nombres = [menu['nombre'] for menu in menus]  # Cambiado de menu[1] a menu['nombre']
         
         # Actualizar el combobox si ya existe
         if hasattr(self, 'combo_menu'):
             self.combo_menu.configure(values=nombres)
         
         return nombres
-    
+                    
     def insertar_pedido_bd(self):
         try:
             menu_nombre = self.combo_menu.get()
@@ -854,69 +870,85 @@ class SistemaGestionRestaurante(ctk.CTk):
                 messagebox.showerror("Error", "Menú o cliente no encontrado")
                 return
 
-            precio_unitario = menu[3]  # El precio está en el índice 3
+            precio_unitario = menu['precio']
             
-            # Buscar si ya existe un pedido idéntico en el TreeView
+            # Verificar items existentes
             item_existente = None
+            cantidad_total = cantidad
             for item in self.tree_compras.get_children():
                 valores = self.tree_compras.item(item)['values']
-                if (valores[0] == menu_nombre and 
-                    valores[1] == descripcion):
+                if valores[0] == menu_nombre and valores[1] == descripcion:
                     item_existente = item
+                    cantidad_actual = float(valores[2])
+                    cantidad_total += cantidad_actual
                     break
-            
-            if item_existente:
-                # Si existe, sumar la cantidad y actualizar
-                valores_actuales = self.tree_compras.item(item_existente)['values']
-                # Convertir la cantidad actual a float antes de sumar
-                cantidad_actual = float(valores_actuales[2])
-                nueva_cantidad = cantidad_actual + cantidad
-                nuevo_subtotal = precio_unitario * nueva_cantidad
 
-                # Actualizar en el TreeView
-                self.tree_compras.item(item_existente, values=(
-                    menu_nombre,
-                    descripcion,
-                    nueva_cantidad,
-                    f"${precio_unitario:.2f}",
-                    f"${nuevo_subtotal:.2f}"
-                ))
+            # Preparar sesión de base de datos para verificar y descontar menús
+            session = self.menu_crud.Session()
+            try:
+                menu_db = session.query(Menu).filter(Menu.nombre == menu_nombre).first()
+                if menu_db:
+                    # Verificar si hay suficientes menús disponibles
+                    if menu_db.cantidad is None:
+                        menu_db.cantidad = 0
+                    
+                    if menu_db.cantidad < cantidad_total:
+                        messagebox.showerror("Error", f"No hay suficientes menús disponibles. Disponibles: {menu_db.cantidad}")
+                        return
+                    
+                    # Proceder con la inserción o actualización
+                    if item_existente:
+                        valores_actuales = self.tree_compras.item(item_existente)['values']
+                        cantidad_actual = float(valores_actuales[2])
+                        nueva_cantidad = cantidad_actual + cantidad
+                        nuevo_subtotal = precio_unitario * nueva_cantidad
 
-                # Actualizar en la base de datos
-                # Aquí asumimos que tienes el ID del pedido guardado en algún lugar
-                # Podrías necesitar modificar esta parte según tu implementación
-                # Dentro de insertar_pedido_bd, en la sección donde actualizas el pedido existente:
-                pedido = self.pedido_crud.obtener_pedido_por_cliente_menu_descripcion(
-                    cliente.id, menu[0], descripcion)
-                if pedido:
-                    # Si encontramos el pedido, actualizamos su cantidad
-                    self.pedido_crud.actualizar_cantidad_pedido(pedido.id, nuevo_subtotal)
+                        self.tree_compras.item(item_existente, values=(
+                            menu_nombre,
+                            descripcion,
+                            nueva_cantidad,
+                            f"${precio_unitario:.2f}",
+                            f"${nuevo_subtotal:.2f}"
+                        ))
+
+                        pedido = self.pedido_crud.obtener_pedido_por_cliente_menu_descripcion(
+                            cliente.id, menu['id'], descripcion)
+                        if pedido:
+                            self.pedido_crud.actualizar_cantidad_pedido(pedido.id, nuevo_subtotal)
+                    else:
+                        subtotal = precio_unitario * cantidad
+                        pedido_id = self.pedido_crud.crear_pedido(
+                            cliente_id=cliente.id,
+                            menu_id=menu['id'],
+                            total=subtotal,
+                            descripcion=descripcion
+                        )
+
+                        if pedido_id:
+                            self.tree_compras.insert("", "end", values=(
+                                menu_nombre,
+                                descripcion,
+                                cantidad,
+                                f"${precio_unitario:.2f}",
+                                f"${subtotal:.2f}"
+                            ))
+
+                    # Descontar menús
+                    menu_db.cantidad -= cantidad
+                    session.commit()
                 else:
-                    # Si no encontramos el pedido, podríamos crear uno nuevo o mostrar un error
-                    messagebox.showwarning("Advertencia", "No se encontró el pedido en la base de datos")
-            else:
-                # Si no existe, crear nuevo pedido
-                subtotal = precio_unitario * cantidad
-                pedido_id = self.pedido_crud.crear_pedido(
-                    cliente_id=cliente.id,
-                    menu_id=menu[0],
-                    total=subtotal,
-                    descripcion=descripcion
-                )
+                    messagebox.showerror("Error", "Menú no encontrado")
+                    return
+            except Exception as e:
+                session.rollback()
+                messagebox.showerror("Error", f"Error al descontar menús: {str(e)}")
+            finally:
+                session.close()
 
-                if pedido_id:
-                    # Agregar al TreeView
-                    self.tree_compras.insert("", "end", values=(
-                        menu_nombre,
-                        descripcion,
-                        cantidad,
-                        f"${precio_unitario:.2f}",
-                        f"${subtotal:.2f}"
-                    ))
-
-            # Actualizar total y limpiar campos
+            self.cargar_clientes_combobox()
             self.cargar_pedidos()
             self.actualizar_total()
+            self.cargar_ingredientes_en_lista_menus()
             self.entry_cantidad.delete(0, 'end')
             self.entry_descripcion.delete(0, 'end')
 
@@ -924,14 +956,41 @@ class SistemaGestionRestaurante(ctk.CTk):
             messagebox.showerror("Error", "Por favor ingrese una cantidad válida")
         except Exception as e:
             messagebox.showerror("Error", f"Error al crear pedido: {str(e)}")
-                                                
+                        
+                                    
     def eliminar_item_compra(self):
         seleccion = self.tree_compras.selection()
         if not seleccion:
             messagebox.showerror("Error", "Seleccione un item para eliminar")
             return
 
+        # Get the details of the item to be deleted
+        item_values = self.tree_compras.item(seleccion[0])['values']
+        menu_nombre = item_values[0]
+        cantidad_eliminar = float(item_values[2])
+
+        # Restore menu quantity
+        session = self.menu_crud.Session()
+        try:
+            menu_db = session.query(Menu).filter(Menu.nombre == menu_nombre).first()
+            if menu_db:
+                if menu_db.cantidad is None:
+                    menu_db.cantidad = 0
+                menu_db.cantidad += cantidad_eliminar
+                session.commit()
+            else:
+                messagebox.showerror("Error", "Menú no encontrado")
+                return
+        except Exception as e:
+            session.rollback()
+            messagebox.showerror("Error", f"Error al restaurar menús: {str(e)}")
+        finally:
+            session.close()
+
+        # Remove the item from the TreeView
         self.tree_compras.delete(seleccion)
+        
+        # Update total
         self.actualizar_total()
 
     def actualizar_total(self):
@@ -1150,9 +1209,14 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.cargar_pedidos()
 
     def cargar_clientes_combobox(self):
-        """Carga la lista de clientes en el combobox"""
-        clientes = self.cliente_crud.listar_clientes()
-        nombres_clientes = ["Todos"] + [cliente.nombre for cliente in clientes]
+        """Carga la lista de clientes con pedidos en el combobox"""
+        # Obtener solo los clientes que tienen pedidos
+        pedidos = self.pedido_crud.listar_pedidos_con_cliente()
+        # Crear un conjunto de nombres únicos de clientes que tienen pedidos
+        clientes_con_pedidos = set(cliente.nombre for _, cliente, _ in pedidos)
+        # Convertir a lista y agregar "Todos" al inicio
+        nombres_clientes = ["Todos"] + sorted(list(clientes_con_pedidos))
+        # Configurar el combobox con los nombres filtrados
         self.combobox_cliente.configure(values=nombres_clientes)
         self.combobox_cliente.set("Todos")
 

@@ -1,111 +1,185 @@
-import sqlite3
-from typing import List, Tuple, Optional
+from sqlalchemy import create_engine, func
+from sqlalchemy.orm import sessionmaker, joinedload
+from sqlalchemy.exc import SQLAlchemyError
+from typing import List, Tuple, Optional, Dict
+from models import Base, Menu, MenuIngrediente, Ingrediente
+
 
 class MenuCRUD:
-    def __init__(self, db_path: str = 'restaurante.db'):
+    def __init__(self, database_url: str = 'sqlite:///restaurante.db'):
         """
         Initialize the MenuCRUD with a database connection
         
         Args:
-            db_path (str): Path to the SQLite database file
+            database_url (str): SQLAlchemy database URL
         """
-        self.db_path = db_path
-        self._create_tables()
+        self.engine = create_engine(database_url)
+        Base.metadata.create_all(self.engine)
+        self.Session = sessionmaker(bind=self.engine)
+    
+    def crear_menu(self, nombre: str, descripcion: str, precio: float, ingredientes: List[Tuple[int, float]], cantidad: int = 0) -> int:
+        session = self.Session()
+        try:
+            # Crear nuevo menú
+            nuevo_menu = Menu(
+                nombre=nombre,
+                descripcion=descripcion,
+                precio=precio,  
+                cantidad=cantidad  # Add initial quantity
 
-    def _create_tables(self):
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS menus (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nombre TEXT NOT NULL UNIQUE,
-                    descripcion TEXT NOT NULL,
-                    precio REAL NOT NULL
-                )
-            ''')
+            )
             
-            # Tabla de ingredientes en menús
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS menu_ingredientes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    menu_id INTEGER,
-                    ingrediente_id INTEGER,
-                    cantidad REAL NOT NULL,
-                    FOREIGN KEY (menu_id) REFERENCES menus (id),
-                    FOREIGN KEY (ingrediente_id) REFERENCES ingredientes (id)
-                )
-            ''')
-            conn.commit()
-
-    def crear_menu(self, nombre: str, descripcion: str, precio: float, ingredientes: List[Tuple[int, float]]) -> int:
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO menus (nombre, descripcion, precio) 
-                VALUES (?, ?, ?)
-            ''', (nombre, descripcion, precio))
-            menu_id = cursor.lastrowid           
-
-            # Insertar ingredientes del menú
+            # Agregar ingredientes al menú
             for ingrediente_id, cantidad in ingredientes:
-                cursor.execute('''
-                    INSERT INTO menu_ingredientes (menu_id, ingrediente_id, cantidad) 
-                    VALUES (?, ?, ?)
-                ''', (menu_id, ingrediente_id, cantidad))
+                menu_ingrediente = MenuIngrediente(
+                    ingrediente_id=ingrediente_id,
+                    cantidad=cantidad
+                )
+                nuevo_menu.ingredientes_association.append(menu_ingrediente)
             
-            conn.commit()
-            return menu_id
-
-    def obtener_menu(self, id: int) -> Optional[Tuple[int, str, str]]:
+            session.add(nuevo_menu)
+            session.commit()
+            session.refresh(nuevo_menu)
+            return nuevo_menu.id
+        except SQLAlchemyError as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+    
+    def obtener_menu(self, id: int) -> Optional[Dict]:
         """
-        Retrieve a menu by its ID
+        Retrieve a menu by its ID with detailed information
         
         Args:
             id (int): Menu's ID
         
         Returns:
-            Optional[Tuple[int, str, str]]: Menu details or None if not found
+            Optional[Dict]: Dictionary with menu details or None if not found
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('SELECT id, nombre, descripcion FROM menus WHERE id = ?', (id,))
-            return cursor.fetchone()
-
-    def listar_menus(self) -> List[Tuple[int, str, str, float]]:
+        session = self.Session()
+        try:
+            menu = session.query(Menu).options(
+                joinedload(Menu.ingredientes_association).joinedload(MenuIngrediente.ingrediente)
+            ).filter(Menu.id == id).first()
+            
+            if not menu:
+                return None
+            
+            return {
+                'id': menu.id,
+                'nombre': menu.nombre,
+                'descripcion': menu.descripcion,
+                'precio': menu.precio,
+                'ingredientes': [
+                    {
+                        'id': ing.ingrediente.id,
+                        'nombre': ing.ingrediente.nombre,
+                        'cantidad_requerida': ing.cantidad,
+                        'unidad_medida': ing.ingrediente.unidad_medida
+                    } for ing in menu.ingredientes_association
+                ]
+            }
+        finally:
+            session.close()
+    
+    def obtener_menu_por_nombre(self, nombre: str) -> Optional[Dict]:
         """
-        List all menus in the database with their full details
+        Retrieve a menu by its name with detailed information
+        
+        Args:
+            nombre (str): Menu's name
         
         Returns:
-            List[Tuple[int, str, str, float]]: List of menu details (id, nombre, descripcion, precio)
+            Optional[Dict]: Dictionary with menu details or None if not found
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('SELECT id, nombre, descripcion, precio FROM menus')
-            return cursor.fetchall()
+        session = self.Session()
+        try:
+            menu = session.query(Menu).options(
+                joinedload(Menu.ingredientes_association).joinedload(MenuIngrediente.ingrediente)
+            ).filter(Menu.nombre == nombre).first()
+            
+            if not menu:
+                return None
+            
+            return {
+                'id': menu.id,
+                'nombre': menu.nombre,
+                'descripcion': menu.descripcion,
+                'precio': menu.precio,
+                'ingredientes': [
+                    {
+                        'id': ing.ingrediente.id,
+                        'nombre': ing.ingrediente.nombre,
+                        'cantidad_requerida': ing.cantidad,
+                        'unidad_medida': ing.ingrediente.unidad_medida
+                    } for ing in menu.ingredientes_association
+                ]
+            }
+        finally:
+            session.close()
+    
+    def listar_menus(self) -> List[Dict]:
+        """
+        List all menus with their details
         
-    def obtener_ingredientes_menu(self, menu_id: int) -> List[Tuple[int, str, float]]:
+        Returns:
+            List[Dict]: List of menu dictionaries
         """
-        Get ingredients for a specific menu without price information.
+        session = self.Session()
+        try:
+            menus = session.query(Menu).options(
+                joinedload(Menu.ingredientes_association).joinedload(MenuIngrediente.ingrediente)
+            ).all()
+            
+            return [
+                {
+                    'id': menu.id,
+                    'nombre': menu.nombre,
+                    'descripcion': menu.descripcion,
+                    'precio': menu.precio,
+                    'ingredientes': [
+                        {
+                            'id': ing.ingrediente.id,
+                            'nombre': ing.ingrediente.nombre,
+                            'cantidad_requerida': ing.cantidad,
+                            'unidad_medida': ing.ingrediente.unidad_medida
+                        } for ing in menu.ingredientes_association
+                    ]
+                } for menu in menus
+            ]
+        finally:
+            session.close()
+    
+    def obtener_ingredientes_menu(self, menu_id: int) -> List[Tuple[int, str, float, str]]:
+        """
+        Get ingredients for a specific menu
         
         Args:
             menu_id (int): Menu's ID
         
         Returns:
-            List[Tuple[int, str, float]]: List of (ingrediente_id, nombre_ingrediente, cantidad)
+            List[Tuple[int, str, float, str]]: List of (ingrediente_id, nombre_ingrediente, cantidad, unidad_medida)
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT mi.ingrediente_id, i.nombre, mi.cantidad
-                FROM menu_ingredientes mi
-                JOIN ingredientes i ON mi.ingrediente_id = i.id
-                WHERE mi.menu_id = ?
-            ''', (menu_id,))
-            return cursor.fetchall()
-
-
+        session = self.Session()
+        try:
+            menu_ingredientes = session.query(MenuIngrediente).filter(
+                MenuIngrediente.menu_id == menu_id
+            ).join(Ingrediente).all()
+            
+            return [
+                (
+                    mi.ingrediente_id, 
+                    mi.ingrediente.nombre, 
+                    mi.cantidad,
+                    mi.ingrediente.unidad_medida
+                ) for mi in menu_ingredientes
+            ]
+        finally:
+            session.close()
+    
     def actualizar_menu(self, id: int, nombre: str = None, descripcion: str = None, 
-                         ingredientes: List[Tuple[int, float]] = None):
+                        precio: float = None, ingredientes: List[Tuple[int, float]] = None):
         """
         Update menu information and its ingredients
         
@@ -113,73 +187,129 @@ class MenuCRUD:
             id (int): Menu's ID
             nombre (str, optional): New name
             descripcion (str, optional): New description
+            precio (float, optional): New price
             ingredientes (List[Tuple[int, float]], optional): New list of ingredients
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
+        session = self.Session()
+        try:
+            # Obtener el menú existente
+            menu = session.query(Menu).filter(Menu.id == id).first()
+            if not menu:
+                raise ValueError("Menú no encontrado")
             
-            # Actualizar detalles del menú
-            if nombre or descripcion:
-                updates = []
-                params = []
-                
-                if nombre:
-                    updates.append('nombre = ?')
-                    params.append(nombre)
-                
-                if descripcion:
-                    updates.append('descripcion = ?')
-                    params.append(descripcion)
-                
-                query = f'UPDATE menus SET {", ".join(updates)} WHERE id = ?'
-                params.append(id)
-                
-                cursor.execute(query, tuple(params))
+            # Actualizar campos si se proporcionan
+            if nombre:
+                menu.nombre = nombre
+            if descripcion:
+                menu.descripcion = descripcion
+            if precio is not None:
+                menu.precio = precio
             
             # Actualizar ingredientes si se proporcionan
             if ingredientes is not None:
-                # Primero eliminar ingredientes existentes
-                cursor.execute('DELETE FROM menu_ingredientes WHERE menu_id = ?', (id,))
+                # Eliminar ingredientes existentes
+                session.query(MenuIngrediente).filter(MenuIngrediente.menu_id == id).delete()
                 
-                # Insertar nuevos ingredientes
+                # Agregar nuevos ingredientes
                 for ingrediente_id, cantidad in ingredientes:
-                    cursor.execute('''
-                        INSERT INTO menu_ingredientes (menu_id, ingrediente_id, cantidad) 
-                        VALUES (?, ?, ?)
-                    ''', (id, ingrediente_id, cantidad))
+                    nuevo_ingrediente = MenuIngrediente(
+                        menu_id=id,
+                        ingrediente_id=ingrediente_id,
+                        cantidad=cantidad
+                    )
+                    session.add(nuevo_ingrediente)
             
-            conn.commit()
-
+            session.commit()
+        except SQLAlchemyError as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+    
     def eliminar_menu(self, id: int):
         """
-        Delete a menu from the database
+        Delete a menu and its associated ingredients
         
         Args:
             id (int): Menu's ID
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            # Eliminar primero los ingredientes asociados
-            cursor.execute('DELETE FROM menu_ingredientes WHERE menu_id = ?', (id,))
-            # Luego eliminar el menú
-            cursor.execute('DELETE FROM menus WHERE id = ?', (id,))
-            conn.commit()
-
-    def obtener_menu_por_nombre(self, nombre: str) -> Optional[Tuple[int, str, str, float]]:
+        session = self.Session()
+        try:
+            # Obtener el menú
+            menu = session.query(Menu).filter(Menu.id == id).first()
+            if not menu:
+                raise ValueError("Menú no encontrado")
+            
+            # Eliminar el menú (cascada eliminará los MenuIngrediente)
+            session.delete(menu)
+            session.commit()
+        except SQLAlchemyError as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+    
+    def buscar_menus(self, termino: str = None, precio_min: float = None, 
+                     precio_max: float = None, ingrediente: str = None) -> List[Dict]:
         """
-        Get menu details by name, including price.
+        Búsqueda avanzada de menús con múltiples filtros
         
         Args:
-            nombre (str): Menu's name
+            termino (str, optional): Término a buscar en nombre o descripción
+            precio_min (float, optional): Precio mínimo
+            precio_max (float, optional): Precio máximo
+            ingrediente (str, optional): Nombre de ingrediente a buscar
         
         Returns:
-            Optional[Tuple[int, str, str, float]]: Menu details (id, name, description, price).
+            List[Dict]: Lista de menús que coinciden con los filtros
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT id, nombre, descripcion, precio 
-                FROM menus 
-                WHERE nombre = ?
-            ''', (nombre,))
-            return cursor.fetchone()
+        session = self.Session()
+        try:
+            # Consulta base
+            query = session.query(Menu).options(
+                joinedload(Menu.ingredientes_association).joinedload(MenuIngrediente.ingrediente)
+            )
+            
+            # Filtro por término en nombre o descripción
+            if termino:
+                query = query.filter(
+                    (Menu.nombre.ilike(f"%{termino}%")) | 
+                    (Menu.descripcion.ilike(f"%{termino}%"))
+                )
+            
+            # Filtro por rango de precio
+            if precio_min is not None:
+                query = query.filter(Menu.precio >= precio_min)
+            if precio_max is not None:
+                query = query.filter(Menu.precio <= precio_max)
+            
+            # Filtro por ingrediente
+            if ingrediente:
+                query = query.join(Menu.ingredientes_association).join(MenuIngrediente.ingrediente).filter(
+                    Ingrediente.nombre.ilike(f"%{ingrediente}%")
+                )
+            
+            # Ejecutar consulta y transformar resultados
+            menus = query.all()
+            
+            return [
+                {
+                    'id': menu.id,
+                    'nombre': menu.nombre,
+                    'descripcion': menu.descripcion,
+                    'precio': menu.precio,
+                    'ingredientes': [
+                        {
+                            'id': ing.ingrediente.id,
+                            'nombre': ing.ingrediente.nombre,
+                            'cantidad_requerida': ing.cantidad,
+                            'unidad_medida': ing.ingrediente.unidad_medida
+                        } for ing in menu.ingredientes_association
+                    ]
+                } for menu in menus
+            ]
+        finally:
+            session.close()
+
+
+

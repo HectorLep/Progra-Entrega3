@@ -67,10 +67,12 @@ class MenuIngrediente(Base):
 class Menu(Base):
     __tablename__ = 'menus'
     
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    nombre = Column(String, unique=True, nullable=False)
-    descripcion = Column(String, nullable=False)
-    precio = Column(Float, nullable=False)
+    id = Column(Integer, primary_key=True)
+    nombre = Column(String)
+    descripcion = Column(String)
+    precio = Column(Float)
+    cantidad = Column(Integer, default=0)  # Add this line
+
     
     ingredientes_association = relationship("MenuIngrediente", back_populates="menu", cascade="all, delete-orphan")
     pedidos = relationship("Pedido", back_populates="menu", cascade="all, delete-orphan")
