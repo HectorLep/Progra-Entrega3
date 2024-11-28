@@ -13,17 +13,14 @@ class MenuCRUD:
         self._create_tables()
 
     def _create_tables(self):
-        """
-        Create the menus and menu_ingredientes tables if they don't exist
-        """
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            # Tabla de menús
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS menus (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     nombre TEXT NOT NULL UNIQUE,
-                    descripcion TEXT NOT NULL
+                    descripcion TEXT NOT NULL,
+                    precio REAL NOT NULL
                 )
             ''')
             
@@ -40,30 +37,15 @@ class MenuCRUD:
             ''')
             conn.commit()
 
-    def crear_menu(self, nombre: str, descripcion: str, ingredientes: List[Tuple[int, float]]) -> int:
-        """
-        Create a new menu with its ingredients
-        
-        Args:
-            nombre (str): Menu name
-            descripcion (str): Menu description
-            ingredientes (List[Tuple[int, float]]): List of (ingrediente_id, cantidad)
-        
-        Returns:
-            int: ID of the newly created menu
-        
-        Raises:
-            sqlite3.IntegrityError: If menu name already exists
-        """
+    def crear_menu(self, nombre: str, descripcion: str, precio: float, ingredientes: List[Tuple[int, float]]) -> int:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            # Insertar menú
             cursor.execute('''
-                INSERT INTO menus (nombre, descripcion) 
-                VALUES (?, ?)
-            ''', (nombre, descripcion))
-            menu_id = cursor.lastrowid
-            
+                INSERT INTO menus (nombre, descripcion, precio) 
+                VALUES (?, ?, ?)
+            ''', (nombre, descripcion, precio))
+            menu_id = cursor.lastrowid           
+
             # Insertar ingredientes del menú
             for ingrediente_id, cantidad in ingredientes:
                 cursor.execute('''
@@ -89,18 +71,18 @@ class MenuCRUD:
             cursor.execute('SELECT id, nombre, descripcion FROM menus WHERE id = ?', (id,))
             return cursor.fetchone()
 
-    def listar_menus(self) -> List[Tuple[int, str, str]]:
+    def listar_menus(self) -> List[Tuple[int, str, str, float]]:
         """
-        List all menus in the database
+        List all menus in the database with their full details
         
         Returns:
-            List[Tuple[int, str, str]]: List of menu details
+            List[Tuple[int, str, str, float]]: List of menu details (id, nombre, descripcion, precio)
         """
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT id, nombre, descripcion FROM menus')
+            cursor.execute('SELECT id, nombre, descripcion, precio FROM menus')
             return cursor.fetchall()
-
+        
     def obtener_ingredientes_menu(self, menu_id: int) -> List[Tuple[int, str, float]]:
         """
         Get ingredients for a specific menu without price information.
@@ -197,7 +179,7 @@ class MenuCRUD:
             cursor = conn.cursor()
             cursor.execute('''
                 SELECT id, nombre, descripcion, precio 
-                FROM menu 
+                FROM menus 
                 WHERE nombre = ?
             ''', (nombre,))
             return cursor.fetchone()

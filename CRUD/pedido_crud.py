@@ -7,30 +7,11 @@ from models import Base, Pedido, Cliente, Menu
 
 class PedidoCRUD:
     def __init__(self, database_url: str = 'sqlite:///restaurante.db'):
-        """
-        Initialize the PedidoCRUD with a database connection
-        
-        Args:
-            database_url (str): SQLAlchemy database URL
-        """
         self.engine = create_engine(database_url)
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
 
     def crear_pedido(self, cliente_id: int, menu_id: int, total: float, descripcion: str, fecha: datetime = None) -> Optional[int]:
-        """
-        Create a new order in the database
-        
-        Args:
-            cliente_id (int): ID of the client placing the order
-            menu_id (int): ID of the menu ordered
-            total (float): Total cost of the order
-            descripcion (str): Description of the order
-            fecha (datetime, optional): Date of the order. Defaults to current datetime
-        
-        Returns:
-            Optional[int]: ID of the newly created order or None if creation fails
-        """
         if fecha is None:
             fecha = datetime.now()
         
@@ -91,7 +72,6 @@ class PedidoCRUD:
             cliente_id (int, optional): New client ID
             menu_id (int, optional): New menu ID
             total (float, optional): New total
-            descripcion (str, optional): New description
             fecha (datetime, optional): New date
             
         Returns:
@@ -182,14 +162,14 @@ class PedidoCRUD:
 
     def listar_pedidos_con_cliente(self) -> List[Pedido]:
         """
-        List all orders with client information
+        List all orders with client and menu information
         
         Returns:
-            List[Pedido]: List of order objects with related client information
+            List[Pedido]: List of order objects with related client and menu information
         """
         session = self.Session()
         try:
-            return session.query(Pedido)\
+            return session.query(Pedido, Cliente, Menu)\
                 .join(Cliente)\
                 .join(Menu)\
                 .all()
@@ -212,5 +192,53 @@ class PedidoCRUD:
                 .join(Cliente)\
                 .filter(Cliente.nombre == cliente_nombre)\
                 .all()
+        finally:
+            session.close()
+
+
+    def actualizar_cantidad_pedido(self, pedido_id: int, nueva_cantidad: float) -> bool:
+        """
+        Actualizar la cantidad y el total de un pedido existente
+        
+        Args:
+            pedido_id (int): ID del pedido a actualizar
+            nueva_cantidad (float): Nueva cantidad total
+        
+        Returns:
+            bool: True si la actualización fue exitosa, False en caso contrario
+        """
+        session = self.Session()
+        try:
+            pedido = session.query(Pedido).filter(Pedido.id == pedido_id).first()
+            if pedido:
+                pedido.total = nueva_cantidad
+                session.commit()
+                return True
+            return False
+        except SQLAlchemyError:
+            session.rollback()
+            return False
+        finally:
+            session.close()
+
+    def obtener_pedido_por_cliente_menu_descripcion(self, cliente_id: int, menu_id: int, descripcion: str) -> Optional[Pedido]:
+        """
+        Obtiene un pedido basado en el cliente, menú y descripción
+        
+        Args:
+            cliente_id (int): ID del cliente
+            menu_id (int): ID del menú
+            descripcion (str): Descripción del pedido
+            
+        Returns:
+            Optional[Pedido]: Pedido si existe, None si no se encuentra
+        """
+        session = self.Session()
+        try:
+            return session.query(Pedido).filter(
+                Pedido.cliente_id == cliente_id,
+                Pedido.menu_id == menu_id,
+                Pedido.descripcion == descripcion
+            ).first()
         finally:
             session.close()
