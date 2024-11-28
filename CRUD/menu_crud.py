@@ -118,7 +118,7 @@ class MenuCRUD:
             }
         finally:
             session.close()
-    
+        
     def listar_menus(self) -> List[Dict]:
         """
         List all menus with their details
@@ -138,6 +138,7 @@ class MenuCRUD:
                     'nombre': menu.nombre,
                     'descripcion': menu.descripcion,
                     'precio': menu.precio,
+                    'cantidad': menu.cantidad,  # Add this line
                     'ingredientes': [
                         {
                             'id': ing.ingrediente.id,
@@ -150,7 +151,7 @@ class MenuCRUD:
             ]
         finally:
             session.close()
-    
+                
     def obtener_ingredientes_menu(self, menu_id: int) -> List[Tuple[int, str, float, str]]:
         """
         Get ingredients for a specific menu
@@ -225,7 +226,7 @@ class MenuCRUD:
             raise e
         finally:
             session.close()
-    
+        
     def eliminar_menu(self, id: int):
         """
         Delete a menu and its associated ingredients
@@ -248,7 +249,7 @@ class MenuCRUD:
             raise e
         finally:
             session.close()
-    
+                
     def buscar_menus(self, termino: str = None, precio_min: float = None, 
                      precio_max: float = None, ingrediente: str = None) -> List[Dict]:
         """

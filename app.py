@@ -492,16 +492,17 @@ class SistemaGestionRestaurante(ctk.CTk):
                 for ing in menu['ingredientes']
             ])
             
-            # Calcular cantidad total de ingredientes
-            cantidad_total = sum(ing['cantidad_requerida'] for ing in menu['ingredientes'])
+            # Use 0 as default if 'cantidad' is not in the dictionary
+            cantidad = menu.get('cantidad', 0)
             
             self.tree_menus.insert("", "end", values=(
                 menu['nombre'],  # Nombre
                 menu['descripcion'],  # Descripción
                 ingredientes_str,
                 menu['precio'],  # Precio
-                cantidad_total  # Cantidad total de ingredientes
+                cantidad  # Cantidad, defaulting to 0 if not present
             ))
+
     def actualizar_menu(self):
         # Validar selección
         seleccion = self.tree_menus.selection()
@@ -583,20 +584,51 @@ class SistemaGestionRestaurante(ctk.CTk):
         
         if confirmacion:
             try:
-                self.menu_crud.eliminar_menu(menu[0])
+                # Obtener los ingredientes del menú antes de eliminarlo
+                ingredientes_menu = self.menu_crud.obtener_ingredientes_menu(menu['id'])
+                
+                # Obtener la cantidad de menús eliminados
+                cantidad_menu = self.tree_menus.item(seleccion[0])['values'][4]
+                
+                # Restaurar cantidades de ingredientes
+                for ingrediente_id, nombre_ingrediente, cantidad_requerida, unidad_medida in ingredientes_menu:
+                    # Obtener el ingrediente
+                    ingrediente = self.ingrediente_crud.obtener_ingrediente(ingrediente_id)
+                    
+                    if ingrediente:
+                        # Calcular la cantidad total a restaurar
+                        cantidad_total = cantidad_menu * cantidad_requerida
+                        
+                        # Sumar la cantidad de vuelta al ingrediente
+                        nueva_cantidad = ingrediente.cantidad + cantidad_total
+                        
+                        # Actualizar el ingrediente
+                        self.ingrediente_crud.actualizar_ingrediente(
+                            id=ingrediente_id, 
+                            nombre=ingrediente.nombre, 
+                            tipo=ingrediente.tipo, 
+                            cantidad=nueva_cantidad, 
+                            unidad_medida=ingrediente.unidad_medida
+                        )
+                
+                # Eliminar el menú
+                self.menu_crud.eliminar_menu(menu['id'])
                 
                 messagebox.showinfo("Éxito", f"Menú '{nombre_menu}' eliminado correctamente")
+                
+                # Actualizar interfaces
                 self.obtener_nombres_menus()
+                self.cargar_ingredientes_en_lista_menus()
+                self.cargar_ingredientes_en_treeview()
+                self.cargar_menus_en_treeview()
+                
                 # Limpiar campos
                 self.entry_nombre_menu.delete(0, 'end')
                 self.entry_descripcion_menu.delete(0, 'end')
                 self.entry_cantidad_ingrediente_menu.delete(0, 'end')
-                
-                # Recargar lista de menús
-                self.cargar_menus_en_treeview()
+            
             except Exception as e:
                 messagebox.showerror("Error", f"Ocurrió un error: {str(e)}")
-
 
     def configurar_clientes(self):
         # Create form frame
