@@ -445,6 +445,7 @@ class SistemaGestionRestaurante(ctk.CTk):
                 self.cargar_ingredientes_en_lista_menus()
                 self.cargar_ingredientes_en_treeview()
                 self.cargar_menus_en_treeview()
+                self.obtener_nombres_menus()
                 
                 # Limpiar campos
                 self.entry_nombre_menu.delete(0, 'end')
@@ -829,6 +830,7 @@ class SistemaGestionRestaurante(ctk.CTk):
             self.combo_menu.configure(values=nombres)
         
         return nombres
+    
     def insertar_pedido_bd(self):
         try:
             menu_nombre = self.combo_menu.get()
@@ -913,6 +915,7 @@ class SistemaGestionRestaurante(ctk.CTk):
                     ))
 
             # Actualizar total y limpiar campos
+            self.cargar_pedidos()
             self.actualizar_total()
             self.entry_cantidad.delete(0, 'end')
             self.entry_descripcion.delete(0, 'end')
@@ -1077,7 +1080,7 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.combobox_cliente = None
 
         # Crear un frame para la lista de pedidos y opciones de organización
-        frame_superior = ctk.CTkFrame(self.tab_pedidos, height=1300, width=900)
+        frame_superior = ctk.CTkFrame(self.tab_pedidos, height=900, width=1300)
         frame_superior.place(x=10, y=10)
 
         # Combobox para seleccionar cliente
@@ -1104,18 +1107,30 @@ class SistemaGestionRestaurante(ctk.CTk):
         boton_organizar_cliente.configure(command=self.ordenar_por_cliente)
 
         # Crear un frame para mostrar la lista de pedidos
-        frame_treeview = ctk.CTkFrame(self.tab_pedidos, height=400, width=780)
+        frame_treeview = ctk.CTkFrame(self.tab_pedidos, height=400, width=1200)
         frame_treeview.place(x=10, y=220)
 
         # Crear el Treeview para mostrar los pedidos
         self.tree_pedidos = ttk.Treeview(
-            frame_treeview, columns=("ID", "Cliente", "Fecha", "Total"), show="headings", height=20
+            frame_treeview, 
+            columns=("ID", "Cliente", "Fecha", "Cantidad", "Descripción", "Total"), 
+            show="headings", 
+            height=20
         )
+
         self.tree_pedidos.heading("ID", text="ID Pedido")
+        self.tree_pedidos.column("ID", width=100, anchor="center")
         self.tree_pedidos.heading("Cliente", text="Cliente")
+        self.tree_pedidos.column("Cliente", width=200, anchor="center")
         self.tree_pedidos.heading("Fecha", text="Fecha")
+        self.tree_pedidos.column("Fecha", width=200, anchor="center")
+        self.tree_pedidos.heading("Cantidad", text="Cantidad")
+        self.tree_pedidos.column("Cantidad", width=100, anchor="center")
+        self.tree_pedidos.heading("Descripción", text="Descripción")
+        self.tree_pedidos.column("Descripción", width=200, anchor="center")
         self.tree_pedidos.heading("Total", text="Total")
-        self.tree_pedidos.place(x=0, y=0, height=400, width=780)
+        self.tree_pedidos.column("Total", width=150, anchor="center")
+        self.tree_pedidos.place(x=10, y=10)
 
         # Crear un frame inferior para el total y otras acciones
         frame_inferior = ctk.CTkFrame(self.tab_pedidos, height=50, width=800)
@@ -1129,7 +1144,6 @@ class SistemaGestionRestaurante(ctk.CTk):
         boton_confirmar = ctk.CTkButton(frame_inferior, text="Confirmar Pedido", width=150)
         boton_confirmar.place(x=630, y=10)
         boton_confirmar.configure(command=self.confirmar_pedido)
-
 
         # Cargar datos iniciales
         self.cargar_clientes_combobox()
@@ -1159,13 +1173,15 @@ class SistemaGestionRestaurante(ctk.CTk):
                 pedido.id,
                 cliente.nombre,
                 fecha_formateada,
+                pedido.cantidad,
+                pedido.descripcion,  # Added description
                 f"${pedido.total:,.0f}"
             ))
             total_general += pedido.total
         
         # Actualizar el total
         self.label_total.configure(text=f"Total: ${total_general:,.0f} CLP")
-
+            
     def filtrar_por_cliente(self):
         """Filtra los pedidos por el cliente seleccionado"""
         cliente_seleccionado = self.combobox_cliente.get()
@@ -1189,13 +1205,15 @@ class SistemaGestionRestaurante(ctk.CTk):
                 pedido.id,
                 cliente_seleccionado,
                 fecha_formateada,
+                pedido.cantidad,
+                pedido.descripcion,  # Added description
                 f"${pedido.total:,.0f}"
             ))
             total_cliente += pedido.total
         
         # Actualizar el total
         self.label_total.configure(text=f"Total: ${total_cliente:,.0f} CLP")
-
+        
     def ordenar_por_fecha(self):
         """Ordena los pedidos por fecha"""
         items = [(self.tree_pedidos.item(item)["values"], item) for item in self.tree_pedidos.get_children()]

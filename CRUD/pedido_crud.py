@@ -11,7 +11,7 @@ class PedidoCRUD:
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
 
-    def crear_pedido(self, cliente_id: int, menu_id: int, total: float, descripcion: str, fecha: datetime = None) -> Optional[int]:
+    def crear_pedido(self, cliente_id: int, menu_id: int, total: float, descripcion: str, cantidad: int = 1, fecha: datetime = None) -> Optional[int]:
         if fecha is None:
             fecha = datetime.now()
         
@@ -22,6 +22,7 @@ class PedidoCRUD:
                 menu_id=menu_id,
                 total=total,
                 descripcion=descripcion,
+                cantidad=cantidad,
                 fecha=fecha
             )
             session.add(nuevo_pedido)
@@ -63,20 +64,7 @@ class PedidoCRUD:
             session.close()
 
     def actualizar_pedido(self, id: int, cliente_id: int = None, menu_id: int = None,
-                         total: float = None, descripcion: str = None, fecha: datetime = None) -> bool:
-        """
-        Update order information
-        
-        Args:
-            id (int): Order's ID
-            cliente_id (int, optional): New client ID
-            menu_id (int, optional): New menu ID
-            total (float, optional): New total
-            fecha (datetime, optional): New date
-            
-        Returns:
-            bool: True if update was successful, False otherwise
-        """
+                        total: float = None, descripcion: str = None, cantidad: int = None, fecha: datetime = None) -> bool:
         session = self.Session()
         try:
             pedido = session.query(Pedido).filter(Pedido.id == id).first()
@@ -91,6 +79,8 @@ class PedidoCRUD:
                 pedido.total = total
             if descripcion is not None:
                 pedido.descripcion = descripcion
+            if cantidad is not None:
+                pedido.cantidad = cantidad
             if fecha is not None:
                 pedido.fecha = fecha
                 
@@ -102,6 +92,7 @@ class PedidoCRUD:
         finally:
             session.close()
 
+            
     def eliminar_pedido(self, id: int) -> bool:
         """
         Delete an order from the database

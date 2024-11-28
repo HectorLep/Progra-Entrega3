@@ -23,13 +23,14 @@ class Pedido(Base):
     cliente_id = Column(Integer, ForeignKey('clientes.id', onupdate="CASCADE"), nullable=False)
     menu_id = Column(Integer, ForeignKey('menus.id', onupdate="CASCADE"), nullable=False)
     total = Column(Float, nullable=False)
+    cantidad = Column(Integer, nullable=False, default=1)  # New column
     fecha = Column(DateTime, nullable=False, default=datetime.now)
     
     cliente = relationship("Cliente", back_populates="pedidos")
     menu = relationship("Menu", back_populates="pedidos")
 
     def __repr__(self):
-        return f"<Pedido(descripcion='{self.descripcion}', cliente_id={self.cliente_id}, total={self.total})>"
+        return f"<Pedido(descripcion='{self.descripcion}', cliente_id={self.cliente_id}, total={self.total}, cantidad={self.cantidad})>"
 
 class Ingrediente(Base):
     __tablename__ = 'ingredientes'
