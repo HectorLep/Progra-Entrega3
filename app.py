@@ -312,13 +312,13 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.lista_ingredientes.place(x=20, y=90)
 
         # Entry for ingredient quantity in menu
-        label_cantidad_ingrediente = ctk.CTkLabel(frame_formulario, text="Cantidad:")
+        label_cantidad_ingrediente = ctk.CTkLabel(frame_formulario, text="Cant. ingr. :")
         label_cantidad_ingrediente.place(x=360, y=60)
         self.entry_cantidad_ingrediente_menu = ctk.CTkEntry(frame_formulario, width=100)
         self.entry_cantidad_ingrediente_menu.place(x=450, y=60)
 
         # Agregar label y entry para cantidad de ingredientes
-        label_cant_ingredientes = ctk.CTkLabel(frame_formulario, text="Cant. Ingredientes:")
+        label_cant_ingredientes = ctk.CTkLabel(frame_formulario, text="stock de menus:")
         label_cant_ingredientes.place(x=600, y=60)
         self.entry_cant_ingredientes_menu = ctk.CTkEntry(frame_formulario, width=100)
         self.entry_cant_ingredientes_menu.place(x=750, y=60)
