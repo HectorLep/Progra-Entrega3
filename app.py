@@ -978,6 +978,9 @@ class SistemaGestionRestaurante(ctk.CTk):
                     # Descontar menús
                     menu_db.cantidad -= cantidad
                     session.commit()
+                    
+                    # Actualizar el treeview de menús después de descontar
+                    self.cargar_menus_en_treeview()
                 else:
                     messagebox.showerror("Error", "Menú no encontrado")
                     return
@@ -997,8 +1000,8 @@ class SistemaGestionRestaurante(ctk.CTk):
         except ValueError:
             messagebox.showerror("Error", "Por favor ingrese una cantidad válida")
         except Exception as e:
-            messagebox.showerror("Error", f"Error al crear pedido: {str(e)}")
-                                                       
+            messagebox.showerror("Error", f"Error al crear pedido: {str(e)}")                          
+
     def eliminar_item_compra(self):
         seleccion = self.tree_compras.selection()
         if not seleccion:
@@ -1060,47 +1063,7 @@ class SistemaGestionRestaurante(ctk.CTk):
         # Calcular total
         total = sum(float(self.tree_compras.item(item)['values'][4].replace('$', '')) for item in items)
         
-        # Preparar descripción de menús
-        descripcion = ", ".join([f"{self.tree_compras.item(item)['values'][0]} ({self.tree_compras.item(item)['values'][1]})" for item in items])
-        
-        # Obtener el cliente
-        cliente = self.cliente_crud.obtener_cliente_por_nombre(cliente_nombre)
-        
-        if not cliente:
-            messagebox.showerror("Error", "No se encontró el cliente")
-            return
-
         try:
-            # Crear pedidos en la base de datos
-            pedidos = []
-            for item in items:
-                menu_nombre = self.tree_compras.item(item)['values'][0]
-                menu = self.menu_crud.obtener_menu_por_nombre(menu_nombre)
-                
-                if not menu:
-                    messagebox.showerror("Error", f"No se encontró el menú {menu_nombre}")
-                    return
-                
-                subtotal = float(self.tree_compras.item(item)['values'][4].replace('$', ''))
-                descripcion_item = self.tree_compras.item(item)['values'][1]
-                cantidad = float(self.tree_compras.item(item)['values'][2])
-                
-                pedido_id = self.pedido_crud.crear_pedido(
-                    cliente_id=cliente.id, 
-                    menu_id=menu['id'],  # Changed from menu[0] to menu['id']
-                    total=subtotal,
-                    descripcion=descripcion_item
-                )
-                
-                if not pedido_id:
-                    messagebox.showerror("Error", f"No se pudo crear el pedido para {menu_nombre}")
-                    return
-                
-                pedidos.append(pedido_id)
-
-            # Rest of the method remains the same...
-
-            # Generar PDF
             # Asegurar que exista el directorio de boletas
             os.makedirs('boletas', exist_ok=True)
             
