@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 from models import Menu  # Add this import
-from graficos import GraficosVentas, GraficoMenusMasComprados
+from graficos import GraficosVentas, GraficoMenusMasComprados, GraficoUsoIngredientes
 
 class SistemaGestionRestaurante(ctk.CTk):
     def __init__(self):
@@ -50,6 +50,7 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.tab_pedidos = self.tabview.add("Pedidos")
         self.tab_graficos_ventas = self.tabview.add("Graficos Ventas")
         self.tab_graficos_menus = self.tabview.add("Grafico Menús más comprados")
+        self.tab_graficos_ingredientes = self.tabview.add("Grafico Ingredientes")
 
         # Configurar cada pestaña
         self.configurar_ingredientes()
@@ -62,6 +63,7 @@ class SistemaGestionRestaurante(ctk.CTk):
     def configurar_graficos(self):
         self.grafico1 = GraficosVentas(self.tab_graficos_ventas)
         self.grafico2 = GraficoMenusMasComprados(self.tab_graficos_menus)
+        self.grafico3 = GraficoUsoIngredientes(self.tab_graficos_ingredientes)
 
     def configurar_ingredientes(self):
         # Crear formulario manualmente

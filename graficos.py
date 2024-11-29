@@ -82,12 +82,8 @@ class GraficoMenusMasComprados(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, width=1200, height=1000)
         self.place(x=70, y=50)
-
-        # Etiqueta
         label = ctk.CTkLabel(parent, text="Distribución de los Menús Más Comprados", font=("Arial", 20))
         label.place(x=500, y=20)
-
-        # Obtener y mostrar gráfico
         self.mostrar_grafico()
 
     def mostrar_grafico(self):
@@ -95,53 +91,79 @@ class GraficoMenusMasComprados(ctk.CTkFrame):
         fig, ax = plt.subplots(figsize=(15, 7))
         ax.set_facecolor("#f9f9f9")
         fig.patch.set_facecolor("#e0e0e0")
-
-        # Gráfico
         ax.barh(etiquetas2, totales2, color="#66b3ff")
         ax.set_title("Menús Más Comprados", fontsize=18)
         ax.set_xlabel("Cantidad", fontsize=14)
         ax.set_ylabel("Menús", fontsize=14)
         ax.grid(axis="x", linestyle="--")
-
-        # Insertar gráfico en la interfaz
         canvas = FigureCanvasTkAgg(fig, self)
         canvas.get_tk_widget().pack()
         canvas.draw()
+        
+class GraficoUsoIngredientes(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent, width=1200, height=1000)
+        self.place(x=70, y=50)
+        label = ctk.CTkLabel(parent, text="Uso de Ingredientes Basado en Pedidos", font=("Arial", 20))
+        label.place(x=500, y=20)
+        self.mostrar_grafico()
+
+    def mostrar_grafico(self):
+        etiquetas3, totales3 = obtener_datos_uso_ingredientes()
+        fig, ax = plt.subplots(figsize=(15, 7))
+        ax.set_facecolor("#f9f9f9")
+        fig.patch.set_facecolor("#e0e0e0")
+        ax.barh(etiquetas3, totales3, color="#ffcc99")
+        ax.set_title("Uso de Ingredientes", fontsize=18)
+        ax.set_xlabel("Cantidad Usada", fontsize=14)
+        ax.set_ylabel("Ingredientes", fontsize=14)
+        ax.grid(axis="x", linestyle="--")
+        canvas = FigureCanvasTkAgg(fig, self)
+        canvas.get_tk_widget().pack()
+        canvas.draw()
+
 
 def obtener_datos_pedidos(tipo_grafico):
     conn = sqlite3.connect("restaurante.db") 
     cursor = conn.cursor()
 
     if tipo_grafico == "Ventas Diarias":
-        cursor.execute(f"""SELECT DATE(fecha) AS fecha_solo, SUM(total) FROM pedidos GROUP BY DATE(fecha) ORDER BY fecha_solo""")
+        cursor.execute(f"SELECT DATE(fecha) AS fecha_solo, SUM(total) FROM pedidos GROUP BY DATE(fecha) ORDER BY fecha_solo")
     
     elif tipo_grafico == "Ventas Semanales":
-        cursor.execute("""SELECT strftime('%Y-%W', fecha) AS semana, SUM(total) FROM pedidos GROUP BY semana ORDER BY strftime('%Y-%m-%d', fecha)""")
+        cursor.execute("SELECT strftime('%Y-%W', fecha) AS semana, SUM(total) FROM pedidos GROUP BY semana ORDER BY strftime('%Y-%m-%d', fecha)")
    
     elif tipo_grafico == "Ventas Mensuales":
-        cursor.execute(f"""SELECT strftime('%m-%Y', fecha) AS mes, SUM(total) FROM pedidos GROUP BY mes ORDER BY mes""")
+        cursor.execute(f"SELECT strftime('%m-%Y', fecha) AS mes, SUM(total) FROM pedidos GROUP BY mes ORDER BY mes")
     
     elif tipo_grafico == "Ventas Anuales":
-        cursor.execute(f"""SELECT strftime('%Y', fecha) AS año, SUM(total) FROM pedidos GROUP BY año ORDER BY año""")
+        cursor.execute(f"SELECT strftime('%Y', fecha) AS año, SUM(total) FROM pedidos GROUP BY año ORDER BY año")
 
     resultados = cursor.fetchall()
     conn.close()
-
     etiquetas = [fila[0] for fila in resultados]
     totales = [fila[1] for fila in resultados]
     return etiquetas, totales
 
 
 def obtener_datos_menus_mas_comprados():
-    conn = sqlite3.connect("restaurante.db")
+    conn = sqlite3.connect('restaurante.db')
     cursor = conn.cursor()
-
-    # Consulta para obtener menús más comprados
-    cursor.execute("""SELECT menus.nombre, SUM(pedidos.cantidad) FROM pedidos JOIN menus ON pedidos.menu_id = menus.id GROUP BY pedidos.menu_id ORDER BY SUM(pedidos.cantidad) DESC""")
-
+    cursor.execute('SELECT menus.nombre, SUM(pedidos.cantidad) FROM pedidos JOIN menus ON pedidos.menu_id = menus.id GROUP BY pedidos.menu_id ORDER BY SUM(pedidos.cantidad) DESC')
     resultados = cursor.fetchall()
     conn.close()
-
     etiquetas2 = [fila[0] for fila in resultados]
     totales2 = [fila[1] for fila in resultados]
     return etiquetas2, totales2
+
+
+def obtener_datos_uso_ingredientes():
+    conn = sqlite3.connect('restaurante.db')
+    cursor = conn.cursor()
+    query = 'SELECT i.nombre AS ingrediente, SUM(mi.cantidad * p.cantidad) AS total_usado FROM menu_ingredientes mi JOIN ingredientes i ON mi.ingrediente_id = i.id JOIN pedidos p ON mi.menu_id = p.menu_id GROUP BY i.id ORDER BY total_usado DESC;'
+    cursor.execute(query)
+    resultados = cursor.fetchall()
+    conn.close()
+    etiquetas = [fila[0] for fila in resultados]
+    totales = [fila[1] for fila in resultados]
+    return etiquetas, totales
