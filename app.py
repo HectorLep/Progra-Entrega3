@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 from models import Menu  # Add this import
+from graficos import Graficos
 
 class SistemaGestionRestaurante(ctk.CTk):
     def __init__(self):
@@ -55,6 +56,10 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.configurar_clientes()
         self.configurar_compras()
         self.configurar_pedidos()
+        self.configurar_graficos()
+
+    def configurar_graficos(self):
+        self.graficos = Graficos(self.tab_graficos)
 
     def configurar_ingredientes(self):
         # Crear formulario manualmente
