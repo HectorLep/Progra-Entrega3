@@ -9,8 +9,8 @@ from datetime import datetime
 
 class GraficosVentas(ctk.CTkFrame):
     def __init__(self, parent):
-        super().__init__(parent, width=1200, height=1000)  
-        self.place(x=70, y=50)
+        super().__init__(parent, width=1200, height=1150)  
+        self.place(x=70, y=40)
 
         # Etiqueta y combobox
         label = ctk.CTkLabel(parent, text="Selecciona un tipo de gráfico:")
@@ -21,7 +21,7 @@ class GraficosVentas(ctk.CTkFrame):
             values=["Ventas Diarias", "Ventas Semanales", "Ventas Mensuales", "Ventas Anuales"],
             state="readonly"
         )
-        self.combo_graficos.place(x=845, y=32)
+        self.combo_graficos.place(x=845, y=28)
         self.combo_graficos.bind("<<ComboboxSelected>>", self.actualizar_grafico)
 
     def actualizar_grafico(self, event):
@@ -34,7 +34,7 @@ class GraficosVentas(ctk.CTkFrame):
         etiquetas, totales = obtener_datos_pedidos(tipo_grafico)
 
         # Ajuste 
-        fig, ax = plt.subplots(figsize=(15, 7))
+        fig, ax = plt.subplots(figsize=(14, 6))
         ax.set_facecolor("#f9f9f9")
         fig.patch.set_facecolor("#e0e0e0")
         
@@ -47,7 +47,7 @@ class GraficosVentas(ctk.CTkFrame):
             ax.grid(True) 
             ax.set_ylim(0, max(totales) * 1.1) 
             ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:,.0f}"))  
-            plt.xticks(rotation=45, ha="right")
+            plt.xticks(rotation=35, ha="right")
         elif tipo_grafico == "Ventas Semanales":
             ax.bar(etiquetas, totales, color="blue")
             ax.set_title("Ventas Semanales")
@@ -88,7 +88,7 @@ class GraficoMenusMasComprados(ctk.CTkFrame):
 
     def mostrar_grafico(self):
         etiquetas2, totales2 = obtener_datos_menus_mas_comprados()
-        fig, ax = plt.subplots(figsize=(15, 7))
+        fig, ax = plt.subplots(figsize=(14, 6))
         ax.set_facecolor("#f9f9f9")
         fig.patch.set_facecolor("#e0e0e0")
         ax.barh(etiquetas2, totales2, color="#66b3ff")
@@ -110,7 +110,7 @@ class GraficoUsoIngredientes(ctk.CTkFrame):
 
     def mostrar_grafico(self):
         etiquetas3, totales3 = obtener_datos_uso_ingredientes()
-        fig, ax = plt.subplots(figsize=(15, 7))
+        fig, ax = plt.subplots(figsize=(14, 6))
         ax.set_facecolor("#f9f9f9")
         fig.patch.set_facecolor("#e0e0e0")
         ax.barh(etiquetas3, totales3, color="#ffcc99")
