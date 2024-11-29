@@ -273,8 +273,7 @@ class SistemaGestionRestaurante(ctk.CTk):
                     messagebox.showerror("Error", "No se pudo eliminar el ingrediente.")
             except Exception as e:
                 messagebox.showerror("Error", f"Ocurrió un error: {str(e)}")
-
-                
+   
     def configurar_menus(self):
         # Frame for menu form
         frame_formulario = ctk.CTkFrame(self.tab_menus, width=1400, height=700)
@@ -347,7 +346,6 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.tree_menus.place(x=10, y=10)
         # Agregar estas líneas al final del método para cargar ingredientes
         self.cargar_ingredientes_en_lista_menus()
-        
 
     def cargar_ingredientes_en_lista_menus(self):
         # Limpiar lista actual
@@ -474,7 +472,6 @@ class SistemaGestionRestaurante(ctk.CTk):
                 messagebox.showerror("Error", "No se pudo crear el menú")
         except Exception as e:
             messagebox.showerror("Error", f"Ocurrió un error: {str(e)}")
-
                 
     def cargar_menus_en_treeview(self):
         # Limpiar treeview actual
@@ -860,22 +857,26 @@ class SistemaGestionRestaurante(ctk.CTk):
     def obtener_nombres_clientes(self):
         """Obtiene la lista de nombres de clientes y actualiza el combobox si existe"""
         clientes = self.cliente_crud.listar_clientes()
-        nombres = [cliente.nombre for cliente in clientes]
+        nombres = [cliente.nombre for cliente in clientes] if clientes else []
         
         # Actualizar el combobox si ya existe
         if hasattr(self, 'combo_clientes'):
             self.combo_clientes.configure(values=nombres)
+            if not nombres:  # Si la lista está vacía
+                self.combo_clientes.set("")  # Establecer texto vacío
         
         return nombres
 
     def obtener_nombres_menus(self):
         """Obtiene la lista de nombres de menús y actualiza el combobox si existe"""
         menus = self.menu_crud.listar_menus()
-        nombres = [menu['nombre'] for menu in menus]  # Cambiado de menu[1] a menu['nombre']
+        nombres = [menu['nombre'] for menu in menus] if menus else []
         
         # Actualizar el combobox si ya existe
         if hasattr(self, 'combo_menu'):
             self.combo_menu.configure(values=nombres)
+            if not nombres:  # Si la lista está vacía
+                self.combo_menu.set("")  # Establecer texto vacío
         
         return nombres
                     
@@ -988,8 +989,7 @@ class SistemaGestionRestaurante(ctk.CTk):
             messagebox.showerror("Error", "Por favor ingrese una cantidad válida")
         except Exception as e:
             messagebox.showerror("Error", f"Error al crear pedido: {str(e)}")
-                        
-                                    
+                                                       
     def eliminar_item_compra(self):
         seleccion = self.tree_compras.selection()
         if not seleccion:
@@ -1078,7 +1078,7 @@ class SistemaGestionRestaurante(ctk.CTk):
                 
                 pedido_id = self.pedido_crud.crear_pedido(
                     cliente_id=cliente.id, 
-                    menu_id=menu[0],  # Obtener el ID del menú
+                    menu_id=menu['id'],  # Changed from menu[0] to menu['id']
                     total=subtotal,
                     descripcion=descripcion_item
                 )
@@ -1088,6 +1088,8 @@ class SistemaGestionRestaurante(ctk.CTk):
                     return
                 
                 pedidos.append(pedido_id)
+
+            # Rest of the method remains the same...
 
             # Generar PDF
             # Asegurar que exista el directorio de boletas
