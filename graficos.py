@@ -8,7 +8,7 @@ from datetime import datetime
 
 class Graficos(ctk.CTkFrame):
     def __init__(self, parent):
-        super().__init__(parent, width=1200, height=700)  
+        super().__init__(parent, width=1200, height=1000)  
         self.place(x=170, y=50)
 
         # Etiqueta y combobox
@@ -33,16 +33,18 @@ class Graficos(ctk.CTkFrame):
         etiquetas, totales = obtener_datos_pedidos(tipo_grafico)
 
         # Ajuste 
-        fig, ax = plt.subplots(figsize=(12, 8))
+        fig, ax = plt.subplots(figsize=(12, 7))
         ax.set_facecolor("#f9f9f9")
         fig.patch.set_facecolor("#e0e0e0")
         
         # Gráfico según tipo
         if tipo_grafico == "Ventas Diarias":
-            ax.plot(etiquetas, totales, label="Ventas", color="red")
+            ax.plot(etiquetas, totales, label="Ventas", color="red", marker='o')  
             ax.set_title("Ventas Diarias")
             ax.set_xlabel("Fechas")
             ax.set_ylabel("Total (CLP)")
+            ax.grid(True) 
+            plt.xticks(rotation=45, ha="right")
         elif tipo_grafico == "Ventas Semanales":
             ax.bar(etiquetas, totales, color="blue")
             ax.set_title("Ventas Semanales")
@@ -73,10 +75,10 @@ def obtener_datos_pedidos(tipo_grafico):
     cursor = conn.cursor()
 
     if tipo_grafico == "Ventas Diarias":
-        cursor.execute(f"""SELECT fecha, SUM(total) FROM pedidos GROUP BY fecha ORDER BY fecha""")
+        cursor.execute(f"""SELECT DATE(fecha) AS fecha_solo, SUM(total) FROM pedidos GROUP BY DATE(fecha) ORDER BY fecha_solo""")
     
     elif tipo_grafico == "Ventas Semanales":
-        cursor.execute(f"""SELECT strftime('%W-%Y', fecha) AS semana, SUM(total) FROM pedidos GROUP BY semana ORDER BY semana""")
+        cursor.execute("""SELECT strftime('%Y-%W', fecha) AS semana, SUM(total) FROM pedidos GROUP BY semana ORDER BY strftime('%Y-%m-%d', fecha)""")
    
     elif tipo_grafico == "Ventas Mensuales":
         cursor.execute(f"""SELECT strftime('%m-%Y', fecha) AS mes, SUM(total) FROM pedidos GROUP BY mes ORDER BY mes""")
