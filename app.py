@@ -1290,6 +1290,17 @@ class SistemaGestionRestaurante(ctk.CTk):
         for index, (_, item) in enumerate(items):
             self.tree_pedidos.move(item, "", index)
 
+        """Ordena los pedidos por nombre de cliente"""
+        items = [(self.tree_pedidos.item(item)["values"], item) for item in self.tree_pedidos.get_children()]
+        
+        # Ordenar por cliente (índice 1)
+        items.sort(key=lambda x: x[0][1])
+        
+        # Reordenar items en el TreeView
+        for index, (_, item) in enumerate(items):
+            self.tree_pedidos.move(item, "", index)
+
+
     def ordenar_por_cliente(self):
         """Ordena los pedidos por nombre de cliente"""
         items = [(self.tree_pedidos.item(item)["values"], item) for item in self.tree_pedidos.get_children()]
