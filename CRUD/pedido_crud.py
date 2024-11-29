@@ -35,15 +35,7 @@ class PedidoCRUD:
             session.close()
 
     def obtener_pedido(self, id: int) -> Optional[Pedido]:
-        """
-        Retrieve an order by its ID
-        
-        Args:
-            id (int): Order's ID
-        
-        Returns:
-            Optional[Pedido]: Order object or None if not found
-        """
+
         session = self.Session()
         try:
             return session.query(Pedido).filter(Pedido.id == id).first()
@@ -51,12 +43,7 @@ class PedidoCRUD:
             session.close()
 
     def listar_pedidos(self) -> List[Pedido]:
-        """
-        List all orders in the database
-        
-        Returns:
-            List[Pedido]: List of order objects
-        """
+
         session = self.Session()
         try:
             return session.query(Pedido).all()
@@ -94,15 +81,7 @@ class PedidoCRUD:
 
             
     def eliminar_pedido(self, id: int) -> bool:
-        """
-        Delete an order from the database
-        
-        Args:
-            id (int): Order's ID
-            
-        Returns:
-            bool: True if deletion was successful, False otherwise
-        """
+
         session = self.Session()
         try:
             pedido = session.query(Pedido).filter(Pedido.id == id).first()
@@ -118,15 +97,7 @@ class PedidoCRUD:
             session.close()
 
     def obtener_pedidos_por_cliente(self, cliente_id: int) -> List[Pedido]:
-        """
-        Retrieve all orders for a specific client
-        
-        Args:
-            cliente_id (int): Client's ID
-        
-        Returns:
-            List[Pedido]: List of order objects
-        """
+
         session = self.Session()
         try:
             return session.query(Pedido).filter(Pedido.cliente_id == cliente_id).all()
@@ -134,15 +105,7 @@ class PedidoCRUD:
             session.close()
 
     def obtener_total_ventas_por_fecha(self, fecha: datetime) -> float:
-        """
-        Calculate total sales for a specific date
-        
-        Args:
-            fecha (datetime): Date to calculate sales for
-        
-        Returns:
-            float: Total sales for the given date
-        """
+
         session = self.Session()
         try:
             return session.query(func.sum(Pedido.total))\
@@ -152,12 +115,7 @@ class PedidoCRUD:
             session.close()
 
     def listar_pedidos_con_cliente(self) -> List[Pedido]:
-        """
-        List all orders with client and menu information
-        
-        Returns:
-            List[Pedido]: List of order objects with related client and menu information
-        """
+
         session = self.Session()
         try:
             return session.query(Pedido, Cliente, Menu)\
@@ -168,15 +126,7 @@ class PedidoCRUD:
             session.close()
 
     def listar_pedidos_por_cliente_nombre(self, cliente_nombre: str) -> List[Pedido]:
-        """
-        Retrieve orders for a specific client by name
-        
-        Args:
-            cliente_nombre (str): Client's name
-        
-        Returns:
-            List[Pedido]: List of order objects
-        """
+
         session = self.Session()
         try:
             return session.query(Pedido)\
@@ -188,16 +138,7 @@ class PedidoCRUD:
 
 
     def actualizar_cantidad_pedido(self, pedido_id: int, nueva_cantidad: float) -> bool:
-        """
-        Actualizar la cantidad y el total de un pedido existente
-        
-        Args:
-            pedido_id (int): ID del pedido a actualizar
-            nueva_cantidad (float): Nueva cantidad total
-        
-        Returns:
-            bool: True si la actualización fue exitosa, False en caso contrario
-        """
+
         session = self.Session()
         try:
             pedido = session.query(Pedido).filter(Pedido.id == pedido_id).first()
@@ -213,17 +154,7 @@ class PedidoCRUD:
             session.close()
 
     def obtener_pedido_por_cliente_menu_descripcion(self, cliente_id: int, menu_id: int, descripcion: str) -> Optional[Pedido]:
-        """
-        Obtiene un pedido basado en el cliente, menú y descripción
-        
-        Args:
-            cliente_id (int): ID del cliente
-            menu_id (int): ID del menú
-            descripcion (str): Descripción del pedido
-            
-        Returns:
-            Optional[Pedido]: Pedido si existe, None si no se encuentra
-        """
+
         session = self.Session()
         try:
             return session.query(Pedido).filter(

@@ -7,12 +7,6 @@ from models import Base, Menu, MenuIngrediente, Ingrediente
 
 class MenuCRUD:
     def __init__(self, database_url: str = 'sqlite:///restaurante.db'):
-        """
-        Initialize the MenuCRUD with a database connection
-        
-        Args:
-            database_url (str): SQLAlchemy database URL
-        """
         self.engine = create_engine(database_url)
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
@@ -48,15 +42,6 @@ class MenuCRUD:
             session.close()
     
     def obtener_menu(self, id: int) -> Optional[Dict]:
-        """
-        Retrieve a menu by its ID with detailed information
-        
-        Args:
-            id (int): Menu's ID
-        
-        Returns:
-            Optional[Dict]: Dictionary with menu details or None if not found
-        """
         session = self.Session()
         try:
             menu = session.query(Menu).options(
@@ -84,15 +69,6 @@ class MenuCRUD:
             session.close()
     
     def obtener_menu_por_nombre(self, nombre: str) -> Optional[Dict]:
-        """
-        Retrieve a menu by its name with detailed information
-        
-        Args:
-            nombre (str): Menu's name
-        
-        Returns:
-            Optional[Dict]: Dictionary with menu details or None if not found
-        """
         session = self.Session()
         try:
             menu = session.query(Menu).options(
@@ -120,12 +96,6 @@ class MenuCRUD:
             session.close()
         
     def listar_menus(self) -> List[Dict]:
-        """
-        List all menus with their details
-        
-        Returns:
-            List[Dict]: List of menu dictionaries
-        """
         session = self.Session()
         try:
             menus = session.query(Menu).options(
@@ -153,15 +123,6 @@ class MenuCRUD:
             session.close()
                 
     def obtener_ingredientes_menu(self, menu_id: int) -> List[Tuple[int, str, float, str]]:
-        """
-        Get ingredients for a specific menu
-        
-        Args:
-            menu_id (int): Menu's ID
-        
-        Returns:
-            List[Tuple[int, str, float, str]]: List of (ingrediente_id, nombre_ingrediente, cantidad, unidad_medida)
-        """
         session = self.Session()
         try:
             menu_ingredientes = session.query(MenuIngrediente).filter(
@@ -181,16 +142,6 @@ class MenuCRUD:
     
     def actualizar_menu(self, id: int, nombre: str = None, descripcion: str = None, 
                         precio: float = None, ingredientes: List[Tuple[int, float]] = None):
-        """
-        Update menu information and its ingredients
-        
-        Args:
-            id (int): Menu's ID
-            nombre (str, optional): New name
-            descripcion (str, optional): New description
-            precio (float, optional): New price
-            ingredientes (List[Tuple[int, float]], optional): New list of ingredients
-        """
         session = self.Session()
         try:
             # Obtener el menú existente
@@ -228,12 +179,6 @@ class MenuCRUD:
             session.close()
         
     def eliminar_menu(self, id: int):
-        """
-        Delete a menu and its associated ingredients
-        
-        Args:
-            id (int): Menu's ID
-        """
         session = self.Session()
         try:
             # Obtener el menú
@@ -252,18 +197,6 @@ class MenuCRUD:
                 
     def buscar_menus(self, termino: str = None, precio_min: float = None, 
                      precio_max: float = None, ingrediente: str = None) -> List[Dict]:
-        """
-        Búsqueda avanzada de menús con múltiples filtros
-        
-        Args:
-            termino (str, optional): Término a buscar en nombre o descripción
-            precio_min (float, optional): Precio mínimo
-            precio_max (float, optional): Precio máximo
-            ingrediente (str, optional): Nombre de ingrediente a buscar
-        
-        Returns:
-            List[Dict]: Lista de menús que coinciden con los filtros
-        """
         session = self.Session()
         try:
             # Consulta base
