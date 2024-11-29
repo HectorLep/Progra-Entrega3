@@ -1242,11 +1242,6 @@ class SistemaGestionRestaurante(ctk.CTk):
         self.label_total = ctk.CTkLabel(frame_inferior, text="Total: 0 CLP", font=("Arial", 14))
         self.label_total.place(x=10, y=10)
 
-        # Botón para confirmar la revisión
-        boton_confirmar = ctk.CTkButton(frame_inferior, text="Confirmar Pedido", width=150)
-        boton_confirmar.place(x=630, y=10)
-        boton_confirmar.configure(command=self.confirmar_pedido)
-
         # Cargar datos iniciales
         self.cargar_clientes_combobox()
         self.cargar_pedidos()
@@ -1342,16 +1337,3 @@ class SistemaGestionRestaurante(ctk.CTk):
         # Reordenar items en el TreeView
         for index, (_, item) in enumerate(items):
             self.tree_pedidos.move(item, "", index)
-
-    def confirmar_pedido(self):
-        """Confirma el pedido seleccionado"""
-        seleccion = self.tree_pedidos.selection()
-        if not seleccion:
-            messagebox.showerror("Error", "Por favor seleccione un pedido para confirmar")
-            return
-        
-        pedido_id = self.tree_pedidos.item(seleccion)["values"][0]
-        
-        # Aquí puedes agregar la lógica para confirmar el pedido
-        # Por ejemplo, actualizar su estado en la base de datos
-        messagebox.showinfo("Éxito", f"Pedido #{pedido_id} confirmado exitosamente")
